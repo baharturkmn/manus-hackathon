@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="#0a6d8d" name="theme-color"/>
+<meta content="SuNöbeti — İstanbul'un günlük su nabzını görünür ve eyleme geçirilebilir kılan farkındalık prototipi." name="description"/>
+<title>SuNöbeti — İstanbul'un su nabzı</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="styles.css" rel="stylesheet"/>
+</head>
+<body>
+<div aria-hidden="true" class="site-grain"></div>
+<main>
+<section aria-labelledby="page-title" class="hero section-shell">
+<nav aria-label="Ana gezinme" class="nav">
+<a aria-label="SuNöbeti ana sayfa" class="wordmark" href="#bugun">
+<svg aria-label="Su damlası logosu" class="logo-drop" role="img" viewBox="0 0 38 42"><path class="drop-shell" d="M19 2C16 8 7 14 7 25a12 12 0 0 0 24 0C31 14 22 8 19 2Z"></path><path class="drop-wave" d="M10 25c5-4 10 4 18 0"></path></svg>
+<span>su<span>nöbeti</span></span>
+</a>
+<div class="nav-account"><div class="nav-meta"><span class="live-dot"></span>MUSLUKTA NORMAL · REZERVDE TAKİP</div><button type="button" id="demo-profile-trigger" class="demo-profile-trigger" aria-haspopup="dialog" aria-controls="demo-profile-dialog"><span class="demo-avatar" id="demo-profile-avatar" aria-hidden="true">D</span><span id="demo-profile-trigger-name">Demo giriş</span><small>DEMO</small></button></div>
+</nav>
+<div class="hero-grid workspace-hero-grid">
+<div class="hero-copy">
+<p class="eyebrow">İSTANBUL · 12 EKİM 2026</p>
+<h1 id="page-title">Su akar.<br/><em>Veri konuşur.</em></h1>
+<p class="intro">Musluk akarken görünmeyen su stresini takip et. Günlük alışkanlıklarını seç; faturandaki gerçek değişimi gör.</p>
+
+
+</div>
+
+<div aria-live="polite" class="community-counter" id="community-counter">
+<div class="community-counter-head"><span>BUGÜNÜN TOPLULUK TASARRUFU</span><span>CANLI · SEMBOLİK</span></div>
+<div class="community-counter-value"><span id="community-liters">12.480</span><small>L</small></div>
+<p id="community-contribution">Bu ziyaretteki seçimlerinle artar.</p>
+</div></div>
+</section><div class="workspace-nav" id="workspace-nav"><div class="workspace-context section-shell"><div class="city-summary"><span>İSTANBUL · 12 EKİM 2026</span><strong id="city-summary-occupancy">%38,11</strong><small>genel baraj doluluğu</small></div><div class="mode-pill calm" id="mode-pill">
+<span class="mode-icon" id="mode-icon">≈</span>
+<span><strong id="mode-title">Dikkatli Kal</strong><small id="mode-description">Bugün kritik eşik aşılmadı.</small></span>
+</div></div><div aria-label="SuNöbeti bölümleri" class="workspace-tabs section-shell" role="tablist">
+<button aria-controls="panel-today" aria-selected="true" data-tab="today" id="tab-today" role="tab" type="button">Bugünün Durumu</button>
+<button aria-controls="panel-tasks" aria-selected="false" data-tab="tasks" id="tab-tasks" role="tab" tabindex="-1" type="button">Günlük Görevler</button>
+<button aria-controls="panel-bills" aria-selected="false" data-tab="bills" id="tab-bills" role="tab" tabindex="-1" type="button">Faturam ve Ödülüm</button>
+<button aria-controls="panel-products" aria-selected="false" data-tab="products" id="tab-products" role="tab" tabindex="-1" type="button">Ürün Fikirleri</button>
+<button aria-controls="panel-about" aria-selected="false" data-tab="about" id="tab-about" role="tab" tabindex="-1" type="button">Proje Hakkında</button>
+</div></div><div class="workspace-panels" id="workspace-panels"><div aria-labelledby="tab-today" class="workspace-panel" id="panel-today" role="tabpanel" tabindex="0"><section aria-labelledby="status-title" class="status-section section-shell" id="bugun">
+<div class="section-kicker"> BUGÜNÜN DURUMU</div>
+<div class="status-layout">
+<article class="stat-card reveal">
+<div class="stat-head"><h2 id="status-title">Rezervde kalan</h2><span class="verified">DOĞRULANDI</span></div>
+<div class="big-number"><span id="occupancy-value">38.11</span><sup>%</sup></div>
+<p>İstanbul’a su sağlayan barajların genel ortalama doluluk oranı.</p>
+<div class="stat-footer"><span>SON ÖLÇÜM</span><strong>12.10.2026 · İSKİ</strong></div>
+</article>
+<article class="trend-card reveal">
+<div class="card-head"><div><p class="micro-label">YAKIN DÖNEM</p><h2>Yüzde puanı okumak</h2></div><span class="trend-change" id="trend-change">−0.31 pp</span></div>
+<div class="chart-wrap">
+<svg aria-label="1–12 Ekim 2026 arasındaki baraj doluluk trendi" id="trend-chart" role="img" viewBox="0 0 600 200"></svg>
+</div>
+<div class="chart-legend"><span><i class="legend-dot"></i>İSKİ genel doluluk</span><span>1–12 EKİM</span></div>
+</article>
+</div>
+<div class="status-support-row">
+<article aria-labelledby="critical-dam-title" class="critical-dam-card">
+<div class="critical-dam-top"><span>TEKİL VERİDE EN KRİTİK NOKTA</span><span class="critical-tag">DİKKAT</span></div>
+<div class="critical-dam-main"><div><p class="micro-label">EN KRİTİK BARAJ</p><h3 id="critical-dam-title"><span id="critical-dam-name">Pabuçdere</span></h3></div><div class="critical-dam-value"><span id="critical-dam-value">2.50</span><sup>%</sup></div></div>
+<p>Genel ortalamadan ayrı bakıldığında, Pabuçdere bugün tekil ölçümlerdeki en alarm verici nokta olarak öne çıkıyor.</p>
+</article>
+<div class="status-support-note"><span class="support-number">02</span><p><strong>Bu kutu ana grafiğin yerine geçmez.</strong> Grafik İstanbul barajlarının genel ortalamasını, bu çağrı ise tek bir barajdaki en kritik değeri gösterir. İki sayı birlikte okununca krizin şehir içinde eşit dağılmadığı anlaşılır.</p><span class="support-source">İSKİ tekil baraj verisi · Pabuçdere</span></div>
+</div>
+<p class="source-note">Bu sayı tek başına bir alarm değil; günlük değişimi izlemek için bir işaret. Trend noktaları doğrulanmış günlük haber kayıtlarından derlenmiştir: 1 Ekim %38,42 · 5 Ekim %38,93 · 8 Ekim %38,64 · 9 Ekim %38,64 · 12 Ekim %38,11.</p>
+</section><details class="workspace-details section-shell"><summary>Yağış tahmini ve kritik mod nasıl çalışıyor?</summary><section aria-labelledby="forecast-title" class="forecast-section section-shell">
+<div class="forecast-header"><div><div class="section-kicker"> MGM GÖRÜNÜMÜ</div><h2 id="forecast-title">Yağış sinyali<br/>ufukta var mı?</h2></div><p>Resmî MGM şehir tahmini, İstanbul için günlük hava hadisesi sunar. Apify ile alınan bugünkü kayıt 12–17 Ekim arasında bugün + 5 gelecek günü kapsıyor; 7 günlük kural, bu resmî görünüm güncellendiğinde tamamlanacak şekilde tasarlandı.</p></div>
+<div aria-label="MGM İstanbul beş günlük hava tahmini" class="forecast-strip" id="forecast-strip"></div>
+<div class="forecast-foot"><span><i class="info-dot">i</i> Apify doğrulamasında bugünden sonraki beş gün için sağanak/gök gürültülü sağanak sinyali bulundu.</span><a href="https://www.mgm.gov.tr/?il=Istanbul" rel="noopener" target="_blank">MGM kaynağını aç ↗</a></div>
+</section><section class="logic-section">
+<div class="section-shell logic-layout">
+<div class="logic-copy">
+<div class="section-kicker inverse"> MOD MANTIĞI</div>
+<h2>Veri, kampanyanın<br/>doğru <em>tonunu</em> seçer.</h2>
+<p>Bu bir panik alarmı değil. SuNöbeti, baraj doluluğu <b>%35’in altına</b> düştüğünde ve önümüzdeki 7 günlük pencerede anlamlı yağış sinyali olmadığında mesajı güçlendirir.</p>
+<p class="logic-result" id="logic-result">Bugün eşik aşılmadığı için sakin ama dikkatli kalma mesajı gösteriliyor.</p>
+</div>
+<div class="logic-board reveal">
+<div class="logic-rule">
+<span class="rule-index">A</span><div><small>REZERV EŞİĞİ</small><strong><span class="check-fail" id="threshold-check">×</span> <span id="threshold-expression">38.11% &gt; 35%</span></strong><p id="threshold-result">Hayır · eşik aşılmadı</p></div>
+</div>
+<div class="logic-connector">VE</div>
+<div class="logic-rule">
+<span class="rule-index">B</span><div><small>YAĞIŞ GÖRÜNÜMÜ</small><strong><span class="check-warn" id="rain-check">↗</span> Yağış sinyali var</strong><p>13–17 Ekim MGM’de sağanak/gök gürültülü sağanak</p></div>
+</div>
+<div class="logic-outcome calm" id="logic-outcome"><span>BUGÜNÜN ÇIKTISI</span><b>DİKKATLİ KAL</b><small>Kritik mod kapalı</small></div>
+</div>
+</div>
+</section></details></div><div aria-labelledby="tab-tasks" class="workspace-panel" hidden="" id="panel-tasks" role="tabpanel" tabindex="0"><section aria-labelledby="action-title" class="action-section section-shell">
+<div class="action-lead"><div class="section-kicker"> BUGÜNÜN EYLEMİ</div><h2 id="action-title">Küçük adımlar,<br/><em>görünür</em> etki.</h2><p>Su kesilmesini beklemek yerine, bugün evde yapılabilecek bir şeyi seç. Bu liste bir suçlama değil; akan musluğun arkasındaki rezervi hatırlatan küçük bir ortaklık.</p></div>
+<div class="action-tools">
+<div class="tasks-card reveal">
+<div class="tasks-top"><div><p class="micro-label">GÜNLÜK GÖREVLER</p><strong><span id="task-count">0</span>/8 tamamlandı</strong></div><div class="points"><span id="points-value">0</span><small>KATILIM PUANI</small></div></div>
+<div class="points-explainer"><strong>PUAN NE İŞE YARIYOR?</strong><span>Bu puanlar para ya da kupon olarak harcanmaz; bugünkü katılımını görünür kılar. 5 görevde özel katılım rozeti; 8 görevde damla rozeti ve paylaşılabilir kart açılır. Marka kuponu ise puanla değil, fatura karşılaştırmasında doğrulanan en az %5 düşüşle kazanılır.</span></div>
+<div class="task-list" id="task-list"></div>
+<div class="badge-row" id="badge-row"><span class="badge-icon">◒</span><span><b id="badge-title">Su Nöbetine Katıl</b><small id="badge-copy">8 görevi tamamla: damla rozeti ve paylaşım kartı açılır.</small></span></div>
+<div id="milestone-reward" class="milestone-reward" hidden aria-live="polite"><div class="milestone-emblem" aria-hidden="true"><svg viewBox="0 0 100 100"><path d="m50 5 12 10 15-1 6 14 13 8-4 15 4 15-13 8-6 14-15-1-12 10-12-10-15 1-6-14-13-8 4-15-4-15 13-8 6-14 15 1Z"/><circle cx="50" cy="51" r="26"/></svg><b>5</b></div><div><span>MILESTONE REWARD UNLOCKED</span><h3>5 Badges Earned — Special Reward Unlocked.</h3><p>5 görevi tamamladın: özel katılım rozeti ve PureWave %5 demo indirim kuponu senin. Bu katılım ödülü için fatura karşılaştırması gerekmez. Günlük paylaşım kartı 8 görevde açılır.</p><div id="milestone-coupon" class="coupon-unlocked-card"></div></div></div>
+<div class="badge-meaning"><span><b>ROZET</b> günlük katılım</span><span><b>KART</b> indir / paylaş</span><span><b>KUPON</b> fatura düşüşüyle</span></div>
+</div>
+<div aria-live="polite" class="badge-panel" hidden="" id="badge-panel">
+<div class="badge-panel-copy"><p class="micro-label">PAYLAŞILABİLİR ROZET</p><h3>Bugünkü su nöbetin hazır.</h3><p>8 görevi tamamladın. Bu rozet günlük katılımını görünür kılar; kartı indir veya cihazının paylaşım menüsüyle gönder. Gerçek marka kuponu için fatura karşılaştırmasında en az %5 düşüş gerekir.</p><div class="badge-actions"><button class="badge-button" id="download-badge">PNG İNDİR</button><button class="badge-button secondary" id="share-badge">PAYLAŞ</button></div><small id="badge-share-status">Kartta bugünün gerçek %38,11 doluluk verisi yer alır.</small></div>
+<div class="badge-preview"><canvas aria-label="I'm part of SuNöbeti today paylaşım kartı" height="1200" id="badge-canvas" width="1200"></canvas></div>
+</div>
+</div>
+</section></div><div aria-labelledby="tab-bills" class="workspace-panel" hidden="" id="panel-bills" role="tabpanel" tabindex="0"><section aria-labelledby="bill-title" class="bill-section section-shell" id="fatura">
+<div class="bill-header"><div><div class="section-kicker"> FATURA OKUMA · UPLOAD YOUR BILL</div><h2 id="bill-title">Her ay bir fatura,<br/><em>gerçek bir karşılaştırma.</em></h2></div><p>Artık tek bir güncel fatura yüklüyorsun. Onayladığında fatura demo veritabanındaki geçmiş kayıtlara eklenir; sistem son kayıtla arasındaki tüketimi 30 güne normalize eder ve değişimi gösterir.</p></div>
+<div class="bill-single-layout">
+<article class="bill-upload-card current-bill-card" data-period="current">
+<div class="period-card-head"><div><p class="micro-label">GÜNCEL FATURA</p><h3>Bu ayın faturasını yükle</h3></div><span class="period-chip current-chip">TEK YÜKLEME</span></div>
+<div class="bill-upload-slot" id="current-dropzone"><input accept="image/*" class="bill-file-input comparison-file-input" id="bill-current-input" type="file"/><label class="bill-drop-label compact" for="bill-current-input"><span class="upload-icon"><svg aria-hidden="true" viewBox="0 0 48 48"><path d="M24 33V9M15 18l9-9 9 9"></path><path d="M9 29v8a4 4 0 0 0 4 4h22a4 4 0 0 0 4-4v-8"></path></svg></span><strong>Güncel faturayı yükle</strong><small>Fotoğrafı sürükle-bırak veya seç. OCR sonucu düzenlenebilir.</small><span class="upload-button">DOSYA SEÇ</span></label><div class="bill-preview compact" hidden="" id="bill-current-preview"><img alt="Güncel İSKİ faturası önizlemesi" id="bill-current-preview-image"/><button class="remove-bill" id="bill-current-remove" type="button">KALDIR</button></div><div aria-live="polite" class="ocr-status" id="bill-current-status">Toplam m³ ve Gün Sayısı okunur.</div></div>
+<div class="period-fields"><label><span>Toplam m³ <b>*</b></span><input id="bill-current-total" min="0" placeholder="Örn. 10" step="0.01" type="number"/></label><label><span>Gün Sayısı <b>*</b></span><input id="bill-current-days" min="1" placeholder="Örn. 30" step="1" type="number"/></label><label><span>Dönem <small>YYYYMM</small></span><input id="bill-current-period" inputmode="numeric" maxlength="6" placeholder="202610" type="text"/></label></div>
+<span class="extraction-badge" id="bill-current-badge">MANUEL GİRİŞ HAZIR</span>
+</article>
+<aside aria-labelledby="history-title" class="bill-history-card"><div class="history-card-head"><div><p class="micro-label">FATURA GEÇMİŞİ · DEMO DATABASE</p><h3 id="history-title">Önceki kayıtlar</h3></div><span class="history-count" id="bill-history-count">0 kayıt</span></div><p class="history-intro">Yeni giriş varsa eski referansla; giriş alanları boşsa geçmişteki son iki faturayla karşılaştırma yapılır. Dönem bilgisi bulunan kayıtlar tarihe göre sıralanır. Her iki tüketim 30 güne normalize edilir.</p><div aria-live="polite" class="bill-history-list" id="bill-history-list"></div><button class="sample-bill-button" id="demo-previous-bill" type="button">DEMO ÖNCEKİ FATURAYI KAYDET</button><p class="history-status" id="bill-history-status">Gerçek uygulamada bu geçmiş kullanıcı hesabındaki veritabanında tutulur; bu prototipte demo için tarayıcı hafızası kullanılır.</p></aside>
+</div>
+<div class="bill-reference-row"><div class="sample-bill-reference"><a class="sample-bill-thumb" href="/sample-iski-bill.png" rel="noopener" target="_blank"><img alt="SU FATURASI başlıklı örnek İSKİ faturası" src="/sample-iski-bill.png"/></a><div><p class="micro-label">ÖRNEK FATURA DÜZENİ</p><strong>Bu tip faturayı yükleyebilirsin.</strong><small>“Toplam m³” ve “Gün Sayısı” alanları okunur veya elle düzeltilebilir.</small><a class="sample-bill-open" href="/sample-iski-bill.png" rel="noopener" target="_blank">Tam görseli aç ↗</a></div></div></div>
+<div class="bill-comparison-actions"><button aria-controls="bill-comparison-feedback bill-comparison-error" class="calculate-bill-button" id="calculate-comparison" type="button">SON KAYITLA KARŞILAŞTIR <span>→</span></button><button class="save-bill-button" hidden="" id="save-current-bill" type="button">KAYDET · SONRAKİ REFERANS YAP</button><p class="bill-error" hidden="" id="bill-comparison-error" role="alert" tabindex="-1"></p></div>
+<p class="comparison-help">Yeni fatura girmeden de butona basabilirsin: kayıtlı son iki faturanın sonucu ve önerileri aşağıda gösterilir.</p>
+<div aria-live="polite" class="bill-comparison-feedback" hidden="" id="bill-comparison-feedback" tabindex="-1"></div>
+</section></div><div aria-labelledby="tab-products" class="workspace-panel" hidden="" id="panel-products" role="tabpanel" tabindex="0"><section class="partners-section">
+<div class="section-shell">
+<div class="partners-top"><div><div class="section-kicker inverse"> MARKA + ÜRÜN FİKRİ</div><h2>Günün görevinden<br/><em>ürün fikrine.</em></h2></div><p>Bu kartlar gerçek reklam ya da onaylı iş birliği değildir; tamamen kurgusal marka isimleriyle hazırlanmış konsept ürün rafını gösterir. Her ürün bir günlük görevle eşleşir. Bu rafta kupon veya indirim listelenmez. Ödül yalnızca kişisel fatura karşılaştırmasındaki tüketim düşüşüne göre hesaplanır; karşılaştırma sonucunda “Ödülümü gör” seçeneğiyle açılır. Tüm marka ve teklifler demo amaçlıdır.</p></div>
+
+
+<div class="partner-grid" id="partner-grid"></div>
+</div>
+</section><details class="workspace-details section-shell"><summary>Marka paneli ve ürün geliştirme modeli</summary><div aria-labelledby="partner-dashboard-title" class="partner-dashboard"><div class="dashboard-head"><div><p class="micro-label">BRAND PARTNER DASHBOARD</p><h3 id="partner-dashboard-title">Ödül, farkındalığa değil<br/><em>kanıtlanmış düşüşe</em> bağlanır.</h3></div><span class="dashboard-status">PERFORMANCE-BASED</span></div><div class="dashboard-metrics"><div><span>VERIFIED REDUCTIONS THIS MONTH</span><strong id="verified-users">0 users</strong></div><div><span>AVERAGE SAVINGS</span><strong id="verified-average">0%</strong></div><div><span>COUPON POLICY</span><strong>5%+ = unlock</strong></div></div><p class="dashboard-summary" id="verified-summary">Verified reductions this month: 0 users · average savings: 0%.</p></div><div aria-label="Ürün geliştirme modelinin üç adımı" class="partner-flow"><div><span>01</span><b>Günün görevi</b><small>Örneğin musluğu kapatmak</small></div><svg aria-hidden="true" class="flow-arrow" viewBox="0 0 42 20"><path d="M2 10h35M29 3l7 7-7 7"></path></svg><div><span>02</span><b>Ürün fikri</b><small>Hatırlatan, kolaylaştıran tasarım</small></div><svg aria-hidden="true" class="flow-arrow" viewBox="0 0 42 20"><path d="M2 10h35M29 3l7 7-7 7"></path></svg><div><span>03</span><b>Kişisel doğrulama</b><small>Fatura geçmişi · gerçek düşüş · ödül</small></div></div></details></div><div aria-labelledby="tab-about" class="workspace-panel" hidden="" id="panel-about" role="tabpanel" tabindex="0"><div class="section-shell about-reality"><div aria-label="Musluktan su akarken baraj rezervinin azalabildiğini anlatan karşılaştırma" class="reality-visual">
+<div class="reality-visual-top"><span>GÜNDELİK HAYAT</span><span>İSKİ VERİSİ</span></div>
+<div class="reality-track">
+<div class="reality-card tap-card">
+<div aria-hidden="true" class="tap-symbol"><svg viewBox="0 0 80 80"><path d="M12 32h20v-8c0-9 7-16 16-16h10M47 8h22M31 32h31v15H49"></path><path d="M57 55c0 6-4 10-9 10s-9-4-9-10c0-4 5-10 9-15 4 5 9 11 9 15Z"></path></svg></div>
+<p class="micro-label">MUSLUKTA GÖRÜNEN</p>
+<strong>Su akıyor</strong>
+<small>Bugün kesinti yok; sorun bu yüzden görünmez.</small>
+</div>
+<div aria-label="Ancak rezerv verisi farklı bir tablo gösteriyor" class="reality-link"><span>FARK</span><svg aria-hidden="true" class="comparison-arrow" viewBox="0 0 56 20"><path d="M2 10h47M40 3l7 7-7 7"></path></svg></div>
+<div class="reality-card reserve-card">
+<div aria-hidden="true" class="reserve-meter"><span id="reserve-meter-fill"></span></div>
+<p class="micro-label">VERİDE GÖRÜNEN</p>
+<strong>Rezerv takipte</strong>
+<small>İSKİ genel doluluk · bugün <b id="orb-label">38.11%</b></small>
+</div>
+</div>
+<div class="reality-explainer"><span class="reality-number">01</span><span>Bu iki kart birlikte okunur: günlük deneyim normal olabilir; rezerv ise aynı anda dikkatle izlenmesi gereken başka bir tablo gösterebilir.</span></div>
+</div></div><section aria-labelledby="problem-title" class="problem-section section-shell">
+<div class="section-kicker"> GÜNDELİK HAYATTAKİ BOŞLUK</div>
+<div class="problem-layout">
+<div class="problem-copy">
+<h2 id="problem-title">Musluk akıyor.<br/><em>Sorun görünmüyor.</em></h2>
+<p>Su krizi çoğu zaman “bugün su yok” diye başlamaz. İnsanlar suyu açtığında karşısında hâlâ akan bir musluk görür; baraj seviyesi ise başka bir yerde, başka bir dilde ve çoğu zaman yalnızca haber olduğunda karşımıza çıkar.</p>
+<p class="problem-answer"><strong>SuNöbeti bu boşluğu kapatır:</strong> önce günlük İSKİ verisini açıklar, ardından “bugün ne yapabilirim?” sorusuna tek bir pratik öneri verir.</p>
+</div>
+<div class="problem-grid">
+<article class="problem-card"><span>01</span><p>GÖRÜNEN</p><h3>Musluk akıyor</h3><small>Günlük hayat kesintisiz devam ettiği için su stresi kolayca arka plana düşüyor.</small></article>
+<article class="problem-card"><span>02</span><p>GÖRÜNMEYEN</p><h3>Rezerv değişiyor</h3><small>Barajdaki hareket evin içinde hemen hissedilmiyor; ancak günlük veride izlenebiliyor.</small></article>
+<article class="problem-card highlighted"><span>03</span><p>SU NÖBETİ</p><h3>Veriyi eyleme çeviriyor</h3><small>Bir sayı gösterir, bir görev önerir ve ortak farkındalığı günlük rutine taşır.</small></article>
+</div>
+</div>
+<div class="problem-bridge"><strong>Temel fikir</strong><span>Su kesilmesini beklemeden, suyun değerini günlük hayata taşımak.</span><a aria-label="Bugünün durumuna git" class="bridge-arrow" href="#bugun" title="Bugünün durumuna git"><svg aria-hidden="true" viewBox="0 0 42 20"><path d="M2 10h35M29 3l7 7-7 7"></path></svg></a></div>
+</section><section aria-labelledby="mission-title" class="mission-section section-shell">
+<div aria-hidden="true" class="mission-mark"><svg viewBox="0 0 160 160"><path class="drop-shell" d="M80 18C68 43 39 59 39 92a41 41 0 0 0 82 0c0-33-29-49-41-74Z"></path><path class="drop-wave" d="M49 92c12-9 24 9 36 0s24 9 36 0"></path></svg></div>
+<div class="mission-copy"><p class="eyebrow">SU NÖBETİ</p><h2 id="mission-title">Kriz görünmüyorsa,<br/><em>veriyi günlük hayata indir.</em></h2><p>SuNöbeti kimseyi suçlamıyor; çünkü mesele tek bir kişinin musluğu değil, topluca göremediğimiz bir değişim. Musluktan su akarken barajdaki rezervin nasıl değiştiğini anlaşılır biçimde gösterir; ardından herkesin bugün deneyebileceği küçük bir seçim önerir.</p></div>
+</section><details class="workspace-details section-shell"><summary>Sunum ve sosyal paylaşım metinleri</summary><section aria-labelledby="share-title" class="share-section section-shell">
+<div><div class="section-kicker"> SUNUM HAZIR</div><h2 id="share-title">Sahneye çıkmaya<br/>hazır mesajlar.</h2></div>
+<div class="share-cards">
+<article class="copy-card"><p class="micro-label">PITCH KOPYASI</p><p>SuNöbeti, İstanbul’da musluktan su akmaya devam ettiği için fark edilmeyen su krizini günlük hayata indiren canlı bir farkındalık kampanyasıdır. İSKİ’nin 12 Ekim 2026 ölçümünde genel baraj doluluğu %38,11; Apify ile doğrulanan MGM görünümünde 13–17 Ekim’de sağanak sinyali bulunuyor. Sayıyı anlaşılır bir “bugün ne yapabilirim?” adımına çeviriyor ve eşik değiştiğinde kampanyanın tonunu otomatik olarak güncelliyor.</p><button class="copy-button" data-copy-target="pitch-copy">KOPYALA</button><textarea class="sr-only" id="pitch-copy">SuNöbeti, İstanbul’da musluktan su akmaya devam ettiği için fark edilmeyen su krizini günlük hayata indiren canlı bir farkındalık kampanyasıdır. İSKİ’nin 12 Ekim 2026 ölçümünde genel baraj doluluğu %38,11; Apify ile doğrulanan MGM görünümünde 13–17 Ekim’de sağanak sinyali bulunuyor. Sayıyı anlaşılır bir “bugün ne yapabilirim?” adımına çeviriyor ve eşik değiştiğinde kampanyanın tonunu otomatik olarak güncelliyor.</textarea></article>
+<article class="copy-card social"><p class="micro-label">SOSYAL PAYLAŞIM · DOĞRU DURUM</p><p>Bugün <b>Kritik Tasarruf Modu aktif değil.</b> İSKİ’ye göre İstanbul barajları %38,11 dolulukta; Apify ile doğrulanan MGM görünümünde 13–17 Ekim için sağanak sinyali var. Musluktan su akıyor diye rezervi unutmayalım: bugün bir küçük adım seç. #SuNöbeti</p><button class="copy-button" data-copy-target="social-copy">KOPYALA</button><textarea class="sr-only" id="social-copy">Bugün Kritik Tasarruf Modu aktif değil. İSKİ’ye göre İstanbul barajları %38,11 dolulukta; Apify ile doğrulanan MGM görünümünde 13–17 Ekim için sağanak sinyali var. Musluktan su akıyor diye rezervi unutmayalım: bugün bir küçük adım seç. #SuNöbeti</textarea></article>
+</div>
+</section></details></div></div>
+
+
+
+
+
+
+
+
+
+<footer class="footer section-shell">
+<div class="wordmark"><svg aria-hidden="true" class="logo-drop" viewBox="0 0 38 42"><path class="drop-shell" d="M19 2C16 8 7 14 7 25a12 12 0 0 0 24 0C31 14 22 8 19 2Z"></path><path class="drop-wave" d="M10 25c5-4 10 4 18 0"></path></svg><span>su<span>nöbeti</span></span></div>
+<p>Hackathon prototipi · Veri son doğrulama: 12 Ekim 2026, 10:00 TSİ.</p>
+<p class="data-pipeline"><span>VERIFICATION PIPELINE</span> Apify Web Scraper → MGM İstanbul → muhafazakâr 7 günlük kural. <a href="/data/apify-mgm-verification.json" rel="noopener" target="_blank">Kanıt JSON’unu aç ↗</a></p>
+<div class="footer-sources"><a href="https://grafikgoster.iski.gov.tr/baraj-doluluk/" rel="noopener" target="_blank">İSKİ baraj doluluk ↗</a><a href="https://www.mgm.gov.tr/?il=Istanbul" rel="noopener" target="_blank">MGM İstanbul tahmini ↗</a></div>
+</footer>
+</main>
+<dialog id="demo-profile-dialog" class="demo-profile-dialog" aria-labelledby="demo-profile-title" aria-describedby="demo-profile-notice">
+  <div class="demo-dialog-top"><span>ÖRNEK KULLANICI</span><button type="button" id="demo-profile-close" aria-label="Pencereyi kapat">×</button></div>
+  <div class="demo-dialog-mark" aria-hidden="true"><svg viewBox="0 0 38 42"><path class="drop-shell" d="M19 2C16 8 7 14 7 25a12 12 0 0 0 24 0C31 14 22 8 19 2Z"/><path class="drop-wave" d="M10 25c5-4 10 4 18 0"/></svg></div>
+  <h2 id="demo-profile-title">Su nöbetine katıl.</h2>
+  <p id="demo-profile-notice" class="demo-profile-notice">Hackathon için şifresiz örnek profil. Gerçek hesap oluşturulmaz ve kimlik doğrulaması yapılmaz; gerçek e-posta veya şifre girmen gerekmez.</p>
+  <form id="demo-profile-form">
+    <label for="demo-profile-name">Görünen adın</label><input id="demo-profile-name" type="text" value="Deniz Yılmaz" placeholder="Deniz Yılmaz" minlength="2" maxlength="40" autocomplete="off" required>
+    <p class="demo-name-help">Hazır örnek kullanıcıyla devam et veya görünen adı değiştir.</p>
+    <p id="demo-profile-error" class="demo-profile-error" hidden role="alert"></p>
+    <button class="demo-profile-primary" type="submit">DEMO PROFİLLE GİRİŞ YAP</button>
+  </form>
+  <div id="demo-profile-signed-in" hidden>
+    <div class="demo-profile-welcome"><span>MERHABA</span><strong id="demo-profile-display-name"></strong><small>İstanbul · demo katılımcı</small></div>
+    <div class="demo-profile-metrics"><div><span>GÜNLÜK KATILIM</span><strong id="demo-profile-task-count">0/8 görev</strong></div><div><span>FATURA GEÇMİŞİ</span><strong id="demo-profile-bill-count">0 kayıt</strong></div></div>
+    <button type="button" id="demo-profile-bills" class="demo-profile-primary">FATURAM VE ÖDÜLÜME GİT</button>
+    <button type="button" id="demo-profile-logout" class="demo-profile-secondary">DEMO PROFİLDEN ÇIK</button>
+  </div>
+  <p class="demo-profile-local-note">Profil, görevler ve faturalar yalnızca bu tarayıcının yerel demo hafızasında tutulur. Ad değiştirmek ayrı bir hesap açmaz; çıkış geçmişini silmez. Sunucu hesabı veya güvenli oturum değildir.</p>
+</dialog>
+<p id="demo-profile-status" class="demo-profile-toast" role="status" aria-live="polite"></p>
+<script src="app.js" type="module"></script>
+</body>
+</html>

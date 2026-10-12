@@ -1,0 +1,24 @@
+{
+  "provider": "Apify",
+  "actor": "apify/web-scraper",
+  "runId": "kMAmPKiaEvdBBQxTg",
+  "datasetId": "fIHD83LHI1t7v0nOo",
+  "capturedAt": "2026-10-12T08:52:17.680704+00:00",
+  "sourceUrl": "https://www.mgm.gov.tr/?il=Istanbul",
+  "sourceTitle": "İstanbul İçin Hava Durumu",
+  "verification": "Apify browser scrape completed successfully; source page returned Istanbul forecast content.",
+  "extractedSignals": {
+    "currentObservation": "Açık",
+    "rainSignalDays": [
+      "Salı",
+      "Çarşamba",
+      "Perşembe",
+      "Cuma",
+      "Cumartesi"
+    ],
+    "forecastHorizon": "today + 5 future days",
+    "rainSignalCount": 5
+  },
+  "sourceTextSha256": "d44fc633e19c3b033ed91ba1df1b18ba383155759402b3ccc9af05a1f6a80ced",
+  "sourceTextPreview": "DE\n|\nEN\nKurumsal\nTahminler\nSon Durumlar\nHavacılık\nDenizcilik\nZiraat\nAnalizler\nİletişim\nKAPAT\n Bir Daha Gösterme\n\nMurat KURUM\nÇevre, Şehircilik ve İklim Değişikliği Bakanı\nVolkan Mutlu COŞKUN\nMeteoroloji Genel Müdürü\n\n12 Ekim - 11.10\n\nİstanbul \n\nAçık\n\nHissedilen: 21,8 °C\n21,8 °C\n1012\nhPa\n6\nkm/sa\nH\n%\n71\nSalı\nGökgürültülü Sağanak Yağışlı\n15°C\n20°C\nNem (%)\n79-95\nRüzgar (km/sa)\n\nKuzeyden\n18\nÇarşamba\nKuvvetli Gökgürültülü Sağanak Yağışlı\n15°C\n21°C\nNem (%)\n79-94\nRüzgar (km/sa)\n\nKuzeyden\n30\nPerşembe\nKuvvetli Gökgürültülü Sağanak Yağışlı\n15°C\n18°C\nNem (%)\n67-93\nRüzgar (km/sa)\n\nKuzeyden\n34\nCuma\nGökgürültülü Sağanak Yağışlı\n13°C\n16°C\nNem (%)\n67-89\nRüzgar (km/sa)\n\nKuzeydoğudan\n16\nCumartesi\nGökgürültülü Sağanak Yağışlı\n13°C\n17°C\nNem (%)\n81-93\nRüzgar (km/sa)\n\nKuzeyden\n24\nBugün\nYarın\n \nDeprem Bölgesi Hava Tahmini\nKuvvetli Meteorolojik Hadiseler için Alınacak Tedbirler\n!\nUYARI\nMarmara'nın Batısı ile Kuzey Ege Kıyılarında Yerel Kuvvetli ...\n!\nUYARI\nGüneydoğu Kesimlerde Beklenen Yerel Kuvvetli Yağışlara Dikka...\nSon Gözlemler\n5 Günlük Tahmin (Haritalı)\nUydu Görüntüleri\nRadar Görüntüleri\nMEVBİS\nResmi İklim İstatistikleri\n       Arşiv\nMeteoroloji Genel Müdürü Coşkun ECMWF 113. Olağanüstü Konsey Toplantısı’na Katıldı.\nRüzgar ve Güneş Enerjisi Ölçüm Başvuru Merkezi\nGönüllü Meteorolojist Başvuru Formu\nMGM Proje Öneri Formu\nYeni\nLise Staj Başvuru\nEğitim Başvuru\nKalibrasyon Merkezi\nSık Sorulan Sorular\nDuyurular\n23\nEYLÜL\nYazılım ve Destek Hizmeti Alımı\n \n06\nEKİM\nMeteorolojik Veri Arşivleme Sistemi Bakım ve Lisans Yenileme Hizmeti Alınacaktır\n \nSIZDEN GELEN FOTOĞRAFLAR\n Kütükçü Alibey Caddesi No:4 06120 Kalaba, Keçiören/ANKARA\n KEP Adresi: meteorolojigenelmudurlugu@hs01.kep.tr\n +90 312 302 20 00\n +90 312 302 22 22\n\nMobil Cihazlar için\nMeteoroloji Hava Durumu Uygulaması\n\n© 1998 - 2026 Meteoroloji Genel Müdürlüğü. Her Hakkı Saklıdır.\n\nAmacımız Yasal Uyarı Gizlilik Politikası Çerez Politikası Sitemize Link Vermek İçin Görsel Ürün Ücretli Ürünler Basında Meteoroloji\nWeb Mail E-Kütüphane Kurum İçi Haberler Bilgi Edinme Etik Komisyon Arabuluculuk Komisyonu Site Haritası\n           "
+}
