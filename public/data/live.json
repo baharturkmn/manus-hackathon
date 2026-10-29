@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "reservoir": null,
+  "forecast": {
+    "source": "MGM servis.mgm.gov.tr",
+    "via": "direct",
+    "fetchedAt": "2026-10-29T22:29:18.806Z",
+    "days": [
+      {
+        "date": "2026-10-30",
+        "event": "Sağanak Yağışlı",
+        "code": "rain",
+        "rainSignal": true,
+        "low": 14,
+        "high": 17
+      },
+      {
+        "date": "2026-10-31",
+        "event": "Sağanak Yağışlı",
+        "code": "rain",
+        "rainSignal": true,
+        "low": 12,
+        "high": 17
+      },
+      {
+        "date": "2026-11-01",
+        "event": "Sağanak Yağışlı",
+        "code": "rain",
+        "rainSignal": true,
+        "low": 13,
+        "high": 20
+      },
+      {
+        "date": "2026-11-02",
+        "event": "Sağanak Yağışlı",
+        "code": "rain",
+        "rainSignal": true,
+        "low": 15,
+        "high": 21
+      },
+      {
+        "date": "2026-11-03",
+        "event": "Sağanak Yağışlı",
+        "code": "rain",
+        "rainSignal": true,
+        "low": 14,
+        "high": 18
+      }
+    ]
+  }
+}
