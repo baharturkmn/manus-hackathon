@@ -1,6 +1,7 @@
-// Live city data loaders. Every loader returns null instead of guessing when a
-// source is unreachable (CORS, network, schema change); the page then keeps the
-// dated 12 October 2026 snapshot and says so.
+// Live city data loaders. scripts/update-live-data.mjs runs them server-side
+// (hourly GitHub Action) and writes public/data/live.json, which the page reads.
+// Every loader returns null instead of guessing when a source is unreachable or
+// its schema changed; the page then keeps the dated 12 October 2026 snapshot.
 export const IBB_CKAN_BASE = 'https://data.ibb.gov.tr/api/3/action';
 export const MGM_SERVICE_BASE = 'https://servis.mgm.gov.tr/web';
 export const MGM_CITY = 'İstanbul';
@@ -130,11 +131,11 @@ export function istanbulToday(now = new Date()) {
   return parseDate(parts);
 }
 
-async function fetchJson(fetchImpl, url, timeoutMs) {
+async function fetchJson(fetchImpl, url, timeoutMs, headers = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetchImpl(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+    const response = await fetchImpl(url, { signal: controller.signal, headers: { Accept: 'application/json', ...headers } });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
   } finally {
@@ -171,15 +172,87 @@ export async function loadLiveReservoir({ fetchImpl = globalThis.fetch, timeoutM
   }
 }
 
-export async function loadLiveForecast({ fetchImpl = globalThis.fetch, timeoutMs = 8000 } = {}) {
+export async function loadLiveForecast({ fetchImpl = globalThis.fetch, timeoutMs = 8000, headers = {} } = {}) {
   try {
-    const centres = await fetchJson(fetchImpl, `${MGM_SERVICE_BASE}/merkezler?il=${encodeURIComponent(MGM_CITY)}`, timeoutMs);
+    const centres = await fetchJson(fetchImpl, `${MGM_SERVICE_BASE}/merkezler?il=${encodeURIComponent(MGM_CITY)}`, timeoutMs, headers);
     const centre = (Array.isArray(centres) ? centres : []).find(item => item?.gunlukTahminIstNo);
     if (!centre) return null;
-    const daily = await fetchJson(fetchImpl, `${MGM_SERVICE_BASE}/tahminler/gunluk?istno=${encodeURIComponent(centre.gunlukTahminIstNo)}`, timeoutMs);
+    const daily = await fetchJson(fetchImpl, `${MGM_SERVICE_BASE}/tahminler/gunluk?istno=${encodeURIComponent(centre.gunlukTahminIstNo)}`, timeoutMs, headers);
     const forecast = parseMgmDaily(Array.isArray(daily) ? daily[0] : daily);
     return forecast ? { forecast, source: 'MGM servis.mgm.gov.tr' } : null;
   } catch {
     return null;
   }
+}
+
+function isoDay(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+// Shapes freshly loaded data for public/data/live.json. A source that failed
+// this run keeps its previous good block, so one outage does not blank the page.
+export function buildLiveFile({ reservoir, weather, previous = null, now = new Date() }) {
+  return {
+    version: 1,
+    reservoir: reservoir ? {
+      source: reservoir.source,
+      fetchedAt: now.toISOString(),
+      measuredOn: isoDay(reservoir.latest.date),
+      occupancy: Number(reservoir.latest.occupancy.toFixed(2)),
+      trend: reservoir.trend.map(point => ({ date: isoDay(point.isoDate), value: Number(point.value.toFixed(2)) })),
+      criticalDam: reservoir.criticalDam ? { name: reservoir.criticalDam.name, occupancy: Number(reservoir.criticalDam.occupancy.toFixed(2)), measuredOn: isoDay(reservoir.criticalDam.date) } : null
+    } : previous?.reservoir ?? null,
+    forecast: weather ? {
+      source: weather.source,
+      fetchedAt: now.toISOString(),
+      days: weather.forecast.map(day => ({ date: isoDay(day.isoDate), event: day.event, code: day.code, rainSignal: day.rainSignal, low: day.low, high: day.high }))
+    } : previous?.forecast ?? null
+  };
+}
+
+// Content comparison that ignores fetch timestamps, so the hourly job only
+// commits when a value actually changed.
+export function sameLiveContent(a, b) {
+  const strip = file => JSON.stringify(file, (key, value) => (key === 'fetchedAt' ? undefined : value));
+  return Boolean(a && b) && strip(a) === strip(b);
+}
+
+const FORECAST_MAX_AGE_MS = 36 * 60 * 60 * 1000;
+const RESERVOIR_STALE_DAYS = 3;
+
+// Turns live.json back into the shapes app.js renders. Forecast days that are
+// already past are dropped, and a forecast older than 36 h is ignored entirely
+// rather than feeding an outdated rain signal into the critical-mode rule.
+export function readLiveFile(file, now = new Date()) {
+  if (!file || file.version !== 1) return { reservoir: null, weather: null };
+  const today = istanbulToday(now);
+  let reservoir = null;
+  const r = file.reservoir;
+  const measured = parseDate(r?.measuredOn);
+  if (measured && Number.isFinite(r.occupancy)) {
+    const trend = (r.trend || [])
+      .map(point => ({ isoDate: parseDate(point.date), value: point.value }))
+      .filter(point => point.isoDate && Number.isFinite(point.value))
+      .map(point => ({ ...point, date: shortDateLabel(point.isoDate) }));
+    const damDate = parseDate(r.criticalDam?.measuredOn);
+    reservoir = {
+      source: r.source,
+      fetchedAt: new Date(r.fetchedAt),
+      latest: { date: measured, occupancy: r.occupancy },
+      trend,
+      criticalDam: damDate && Number.isFinite(r.criticalDam.occupancy) ? { name: r.criticalDam.name, occupancy: r.criticalDam.occupancy, date: damDate } : null,
+      stale: (today - measured) / 86400000 > RESERVOIR_STALE_DAYS
+    };
+  }
+  let weather = null;
+  const f = file.forecast;
+  const fetchedAt = new Date(f?.fetchedAt);
+  if (f && Number.isFinite(fetchedAt.getTime()) && now - fetchedAt <= FORECAST_MAX_AGE_MS) {
+    const forecast = (f.days || [])
+      .map(day => ({ ...day, isoDate: parseDate(day.date) }))
+      .filter(day => day.isoDate && day.isoDate >= today)
+      .map(day => ({ ...day, date: shortDateLabel(day.isoDate), name: TR_DAYS[day.isoDate.getUTCDay()] }));
+    if (forecast.length) weather = { source: f.source, fetchedAt, forecast };
+  }
+  return { reservoir, weather };
 }

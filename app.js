@@ -4,7 +4,7 @@ import { getPartnerOffer, BRAND_DISCOUNTS } from './partner-offers.mjs';
 import { initializeWorkspaceTabs } from './workspace-tabs.mjs';
 import { initializeDemoProfile } from './demo-profile.mjs';
 import { milestoneReached, recommendHabitPartner } from './habit-rewards.mjs';
-import { loadLiveReservoir, loadLiveForecast, knownFutureDays, istanbulToday, numericDateLabel } from './live-data.mjs';
+import { readLiveFile, knownFutureDays, istanbulToday, numericDateLabel } from './live-data.mjs';
 
 const liveSnapshot = {
   verifiedAt: '12 Ekim 2026 · 10:00 TSİ',
@@ -53,7 +53,7 @@ const billHistoryStorageKey = 'sunobeti-bill-history-v1';
 const communityBaselineLiters = 12480;
 const billState = { previous: {}, current: {} };
 // Which parts of liveSnapshot came from a live request on this visit.
-const dataState = { reservoirLive: false, forecastLive: false, measuredLabel: '12.10.2026', fetchedAt: null };
+const dataState = { reservoirLive: false, reservoirStale: false, forecastLive: false, measuredLabel: '12.10.2026', reservoirFetchedAt: null, forecastFetchedAt: null };
 
 function decideMode(data) {
   const rainfallAhead = data.forecast.some(day => day.rainSignal);
@@ -686,26 +686,39 @@ function fetchedAtLabel(date) {
 
 function renderDataStatus() {
   const status = document.getElementById('live-data-status');
-  const fetched = dataState.fetchedAt ? fetchedAtLabel(dataState.fetchedAt) : '';
   const parts = [
     dataState.reservoirLive
-      ? `Baraj: canlı · İBB Açık Veri (İSKİ) · ölçüm ${dataState.measuredLabel}`
-      : 'Baraj: canlı veri alınamadı · 12.10.2026 tarihli doğrulanmış kayıt',
-    dataState.forecastLive ? 'Yağış: canlı · MGM' : 'Yağış: canlı veri alınamadı · 12.10.2026 MGM/Apify kaydı'
+      ? `Baraj: İBB Açık Veri (İSKİ) · ${dataState.reservoirStale ? 'son yayımlanan ölçüm' : 'ölçüm'} ${dataState.measuredLabel} · alındı ${fetchedAtLabel(dataState.reservoirFetchedAt)} TSİ`
+      : 'Baraj: güncel veri alınamadı · 12.10.2026 tarihli doğrulanmış kayıt',
+    dataState.forecastLive
+      ? `Yağış: MGM · alındı ${fetchedAtLabel(dataState.forecastFetchedAt)} TSİ`
+      : 'Yağış: güncel tahmin alınamadı · 12.10.2026 MGM/Apify kaydı'
   ];
-  status.textContent = `${parts.join(' — ')}${fetched ? ` · kontrol ${fetched} TSİ` : ''}`;
-  document.getElementById('occupancy-badge').textContent = dataState.reservoirLive ? 'CANLI · İSKİ' : 'TARİHLİ KAYIT';
+  status.textContent = parts.join(' — ');
+  document.getElementById('occupancy-badge').textContent = !dataState.reservoirLive ? 'TARİHLİ KAYIT' : dataState.reservoirStale ? 'SON ÖLÇÜM · İSKİ' : 'GÜNCEL · İSKİ';
+}
+
+// public/data/live.json is written hourly by the update-live-data workflow.
+async function loadLiveFile() {
+  try {
+    const response = await fetch('data/live.json', { cache: 'no-store' });
+    if (!response.ok) return { reservoir: null, weather: null };
+    return readLiveFile(await response.json());
+  } catch {
+    return { reservoir: null, weather: null };
+  }
 }
 
 // Replaces the dated snapshot only with values a live source actually returned.
 async function refreshLiveData() {
-  const [reservoir, weather] = await Promise.all([loadLiveReservoir(), loadLiveForecast()]);
-  dataState.fetchedAt = new Date();
+  const { reservoir, weather } = await loadLiveFile();
   if (reservoir) {
     const measured = numericDateLabel(reservoir.latest.date);
     liveSnapshot.occupancy = reservoir.latest.occupancy;
     if (reservoir.trend.length >= 2) liveSnapshot.trend = reservoir.trend;
     dataState.reservoirLive = true;
+    dataState.reservoirStale = reservoir.stale;
+    dataState.reservoirFetchedAt = reservoir.fetchedAt;
     dataState.measuredLabel = measured;
     document.getElementById('city-summary-date').textContent = `İSTANBUL · ${measured}`;
     document.getElementById('hero-date').textContent = `İSTANBUL · ${measured}`;
@@ -727,6 +740,7 @@ async function refreshLiveData() {
     liveSnapshot.forecast = weather.forecast;
     liveSnapshot.forecastWindowDays = knownFutureDays(weather.forecast, istanbulToday());
     dataState.forecastLive = true;
+    dataState.forecastFetchedAt = weather.fetchedAt;
     document.getElementById('forecast-intro').textContent = `Resmî MGM günlük tahmini İstanbul için ${weather.forecast[0].date}–${weather.forecast.at(-1).date} arasını kapsıyor. Kritik mod 7 ileri günü ister; MGM daha kısa bir ufuk verdiğinde eksik günler için varsayım yapılmaz.`;
     const rainCount = weather.forecast.filter(day => day.rainSignal).length;
     document.getElementById('forecast-foot-note').textContent = rainCount

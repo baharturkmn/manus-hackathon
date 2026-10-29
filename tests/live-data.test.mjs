@@ -94,3 +94,46 @@ test('forecast loader resolves the Istanbul station then reads daily forecast', 
   }) });
   assert.equal(result.forecast[0].rainSignal, true);
 });
+
+import { buildLiveFile, readLiveFile, sameLiveContent } from '../live-data.mjs';
+
+const sampleReservoir = {
+  source: 'İBB Açık Veri Portalı · İSKİ',
+  latest: { date: parseDate('2026-10-29'), occupancy: 36.4 },
+  trend: [{ isoDate: parseDate('2026-10-28'), value: 36.6, date: '28 Eki' }, { isoDate: parseDate('2026-10-29'), value: 36.4, date: '29 Eki' }],
+  criticalDam: { name: 'Pabuçdere', occupancy: 1.9, date: parseDate('2026-10-29') }
+};
+const sampleWeather = { source: 'MGM', forecast: parseMgmDaily({
+  tarihGun1: '2026-10-29T00:00:00.000Z', hadiseGun1: 'A', enDusukGun1: 10, enYuksekGun1: 18,
+  tarihGun2: '2026-10-30T00:00:00.000Z', hadiseGun2: 'SY', enDusukGun2: 11, enYuksekGun2: 17
+}) };
+
+test('live file round-trips into the shapes the page renders', () => {
+  const now = new Date('2026-10-29T22:17:00Z'); // 30 Oct 01:17 in Istanbul
+  const file = JSON.parse(JSON.stringify(buildLiveFile({ reservoir: sampleReservoir, weather: sampleWeather, now })));
+  const { reservoir, weather } = readLiveFile(file, now);
+  assert.equal(reservoir.latest.occupancy, 36.4);
+  assert.equal(reservoir.trend.at(-1).date, '29 Eki');
+  assert.equal(reservoir.criticalDam.name, 'Pabuçdere');
+  assert.equal(reservoir.stale, false);
+  // 29 Oct is already past in Istanbul, so only 30 Oct remains.
+  assert.deepEqual(weather.forecast.map(day => [day.date, day.name, day.rainSignal]), [['30 Eki', 'Cuma', true]]);
+});
+
+test('a failed source keeps its previous block; unchanged values are detected', () => {
+  const first = buildLiveFile({ reservoir: sampleReservoir, weather: sampleWeather, now: new Date('2026-10-29T10:00:00Z') });
+  const second = buildLiveFile({ reservoir: null, weather: sampleWeather, previous: first, now: new Date('2026-10-29T11:00:00Z') });
+  assert.deepEqual(second.reservoir, first.reservoir);
+  assert.equal(sameLiveContent(first, second), true);
+  const third = buildLiveFile({ reservoir: { ...sampleReservoir, latest: { ...sampleReservoir.latest, occupancy: 36.2 } }, weather: sampleWeather, previous: second });
+  assert.equal(sameLiveContent(second, third), false);
+});
+
+test('old forecasts, old measurements and unknown files are handled conservatively', () => {
+  const file = buildLiveFile({ reservoir: sampleReservoir, weather: sampleWeather, now: new Date('2026-10-29T10:00:00Z') });
+  const later = readLiveFile(file, new Date('2026-11-05T10:00:00Z'));
+  assert.equal(later.weather, null);
+  assert.equal(later.reservoir.stale, true);
+  assert.deepEqual(readLiveFile({ version: 2 }), { reservoir: null, weather: null });
+  assert.deepEqual(readLiveFile(null), { reservoir: null, weather: null });
+});
