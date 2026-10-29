@@ -38,7 +38,7 @@ let previous = null;
 try { previous = JSON.parse(await readFile(target, 'utf8')); } catch { /* first run */ }
 
 const [reservoir, weather] = await Promise.all([
-  load('İSKİ/İBB', fetchImpl => loadLiveReservoir({ fetchImpl, timeoutMs })),
+  load('İSKİ/İBB', fetchImpl => loadLiveReservoir({ fetchImpl, timeoutMs, log: line => console.log(`  [İBB] ${line}`) })),
   load('MGM', fetchImpl => loadLiveForecast({ fetchImpl, timeoutMs, headers: mgmHeaders }))
 ]);
 console.log(`İSKİ/İBB: ${reservoir.data ? `ok (${reservoir.via}) · %${reservoir.data.latest.occupancy.toFixed(2)} · ${reservoir.data.latest.date.toISOString().slice(0, 10)}` : 'failed'}`);

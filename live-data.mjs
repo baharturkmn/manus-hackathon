@@ -144,10 +144,14 @@ async function fetchJson(fetchImpl, url, timeoutMs, headers = {}) {
 }
 
 // Finds İSKİ dam datasets on the İBB open data portal and reads their newest records.
-export async function loadLiveReservoir({ fetchImpl = globalThis.fetch, timeoutMs = 8000, maxResources = 6 } = {}) {
+// `log` receives diagnostic lines (resources tried, fields seen, errors).
+export async function loadLiveReservoir({ fetchImpl = globalThis.fetch, timeoutMs = 8000, maxResources = 6, log = () => {} } = {}) {
   try {
     const search = await fetchJson(fetchImpl, `${IBB_CKAN_BASE}/package_search?q=${encodeURIComponent('baraj doluluk')}&rows=10`, timeoutMs);
-    const resources = (search?.result?.results || [])
+    const packages = search?.result?.results || [];
+    log(`package_search: ${packages.length} paket`);
+    packages.forEach(pkg => (pkg.resources || []).forEach(resource => log(`  ${pkg.name} / ${resource.name} · ${resource.format} · datastore=${Boolean(resource.datastore_active)} · ${resource.id}`)));
+    const resources = packages
       .flatMap(pkg => pkg.resources || [])
       .filter(resource => resource.datastore_active)
       .slice(0, maxResources);
@@ -161,13 +165,15 @@ export async function loadLiveReservoir({ fetchImpl = globalThis.fetch, timeoutM
       // because date columns are often stored as text.
       const page = await fetchJson(fetchImpl, `${IBB_CKAN_BASE}/datastore_search?resource_id=${id}&limit=40&offset=${Math.max(0, total - 40)}`, timeoutMs);
       const parsed = parseDamRecords(page?.result?.fields || head?.result?.fields, page?.result?.records);
+      log(`  ${resource.id}: ${total} kayıt · alanlar: ${(page?.result?.fields || []).map(field => field.id).join(', ')} · son kayıt: ${JSON.stringify(page?.result?.records?.at(-1) ?? null).slice(0, 300)} · ${parsed ? 'okundu' : 'tanınmadı'}`);
       if (!parsed) continue;
       if (parsed.latest && (!latest || parsed.latest.date > latest.date)) { latest = parsed.latest; trend = parsed.trend; }
       if (parsed.criticalDam && (!criticalDam || parsed.criticalDam.date > criticalDam.date)) criticalDam = parsed.criticalDam;
       if (latest && criticalDam) break;
     }
     return latest ? { latest, trend, criticalDam, source: 'İBB Açık Veri Portalı · İSKİ' } : null;
-  } catch {
+  } catch (error) {
+    log(`hata: ${error?.message || error}`);
     return null;
   }
 }
