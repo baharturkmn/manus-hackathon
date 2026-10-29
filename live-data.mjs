@@ -173,7 +173,7 @@ export async function loadLiveReservoir({ fetchImpl = globalThis.fetch, timeoutM
     }
     return latest ? { latest, trend, criticalDam, source: 'İBB Açık Veri Portalı · İSKİ' } : null;
   } catch (error) {
-    log(`hata: ${error?.message || error}`);
+    log(`hata: ${error?.message || error}${error?.cause ? ` · neden: ${error.cause.code || ''} ${error.cause.message || error.cause}` : ''}`);
     return null;
   }
 }
