@@ -191,11 +191,13 @@ function isoDay(date) {
 
 // Shapes freshly loaded data for public/data/live.json. A source that failed
 // this run keeps its previous good block, so one outage does not blank the page.
-export function buildLiveFile({ reservoir, weather, previous = null, now = new Date() }) {
+// `via` records how each source was reached ('direct' or 'apify-proxy').
+export function buildLiveFile({ reservoir, weather, previous = null, now = new Date(), via = {} }) {
   return {
     version: 1,
     reservoir: reservoir ? {
       source: reservoir.source,
+      via: via.reservoir ?? 'direct',
       fetchedAt: now.toISOString(),
       measuredOn: isoDay(reservoir.latest.date),
       occupancy: Number(reservoir.latest.occupancy.toFixed(2)),
@@ -204,6 +206,7 @@ export function buildLiveFile({ reservoir, weather, previous = null, now = new D
     } : previous?.reservoir ?? null,
     forecast: weather ? {
       source: weather.source,
+      via: via.forecast ?? 'direct',
       fetchedAt: now.toISOString(),
       days: weather.forecast.map(day => ({ date: isoDay(day.isoDate), event: day.event, code: day.code, rainSignal: day.rainSignal, low: day.low, high: day.high }))
     } : previous?.forecast ?? null

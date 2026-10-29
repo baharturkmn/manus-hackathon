@@ -137,3 +137,9 @@ test('old forecasts, old measurements and unknown files are handled conservative
   assert.deepEqual(readLiveFile({ version: 2 }), { reservoir: null, weather: null });
   assert.deepEqual(readLiveFile(null), { reservoir: null, weather: null });
 });
+
+test('live file records whether each source came directly or via Apify Proxy', () => {
+  const file = buildLiveFile({ reservoir: sampleReservoir, weather: sampleWeather, via: { forecast: 'apify-proxy' } });
+  assert.equal(file.reservoir.via, 'direct');
+  assert.equal(file.forecast.via, 'apify-proxy');
+});

@@ -20,7 +20,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+      - run: npm ci
       - name: Fetch İSKİ and MGM data
+        env:
+          # Optional: enables the Apify Proxy retry when a source refuses GitHub's runners.
+          APIFY_PROXY_PASSWORD: ${{ secrets.APIFY_PROXY_PASSWORD }}
+          APIFY_PROXY_USERNAME: ${{ vars.APIFY_PROXY_USERNAME }}
         run: node scripts/update-live-data.mjs
       - name: Commit changed data
         run: |
