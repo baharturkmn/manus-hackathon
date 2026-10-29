@@ -1,10 +1,41 @@
 {
   "version": 1,
-  "reservoir": null,
+  "reservoir": {
+    "source": "dolulukorani.com · İSKİ verisi",
+    "fetchedAt": "2026-10-29T22:54:54.771Z",
+    "measuredOn": "2026-10-29",
+    "occupancy": 53.6,
+    "trend": [
+      {
+        "date": "2026-10-25",
+        "value": 52.87
+      },
+      {
+        "date": "2026-10-26",
+        "value": 52.77
+      },
+      {
+        "date": "2026-10-27",
+        "value": 52.97
+      },
+      {
+        "date": "2026-10-28",
+        "value": 53.71
+      },
+      {
+        "date": "2026-10-29",
+        "value": 53.6
+      }
+    ],
+    "criticalDam": {
+      "name": "Papuçdere",
+      "occupancy": 2.7,
+      "measuredOn": "2026-10-29"
+    }
+  },
   "forecast": {
     "source": "MGM servis.mgm.gov.tr",
-    "via": "direct",
-    "fetchedAt": "2026-10-29T22:29:18.806Z",
+    "fetchedAt": "2026-10-29T22:54:54.771Z",
     "days": [
       {
         "date": "2026-10-30",

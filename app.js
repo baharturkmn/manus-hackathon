@@ -53,7 +53,7 @@ const billHistoryStorageKey = 'sunobeti-bill-history-v1';
 const communityBaselineLiters = 12480;
 const billState = { previous: {}, current: {} };
 // Which parts of liveSnapshot came from a live request on this visit.
-const dataState = { reservoirLive: false, reservoirStale: false, forecastLive: false, measuredLabel: '12.10.2026', reservoirFetchedAt: null, forecastFetchedAt: null };
+const dataState = { reservoirLive: false, reservoirStale: false, forecastLive: false, measuredLabel: '12.10.2026', reservoirFetchedAt: null, forecastFetchedAt: null, reservoirSource: '' };
 
 function decideMode(data) {
   const rainfallAhead = data.forecast.some(day => day.rainSignal);
@@ -688,7 +688,7 @@ function renderDataStatus() {
   const status = document.getElementById('live-data-status');
   const parts = [
     dataState.reservoirLive
-      ? `Baraj: İBB Açık Veri (İSKİ) · ${dataState.reservoirStale ? 'son yayımlanan ölçüm' : 'ölçüm'} ${dataState.measuredLabel} · alındı ${fetchedAtLabel(dataState.reservoirFetchedAt)} TSİ`
+      ? `Baraj: ${dataState.reservoirSource} · ${dataState.reservoirStale ? 'son yayımlanan ölçüm' : 'ölçüm'} ${dataState.measuredLabel} · alındı ${fetchedAtLabel(dataState.reservoirFetchedAt)} TSİ`
       : 'Baraj: güncel veri alınamadı · 12.10.2026 tarihli doğrulanmış kayıt',
     dataState.forecastLive
       ? `Yağış: MGM · alındı ${fetchedAtLabel(dataState.forecastFetchedAt)} TSİ`
@@ -719,6 +719,7 @@ async function refreshLiveData() {
     dataState.reservoirLive = true;
     dataState.reservoirStale = reservoir.stale;
     dataState.reservoirFetchedAt = reservoir.fetchedAt;
+    dataState.reservoirSource = reservoir.source || 'İSKİ';
     dataState.measuredLabel = measured;
     document.getElementById('city-summary-date').textContent = `İSTANBUL · ${measured}`;
     document.getElementById('hero-date').textContent = `İSTANBUL · ${measured}`;
@@ -727,7 +728,7 @@ async function refreshLiveData() {
       const range = `${liveSnapshot.trend[0].date} – ${liveSnapshot.trend.at(-1).date}`;
       document.getElementById('trend-range').textContent = range.toLocaleUpperCase('tr');
       document.getElementById('trend-chart').setAttribute('aria-label', `${range} arasındaki baraj doluluk trendi`);
-      document.getElementById('trend-source-note').textContent = `Bu sayı tek başına bir alarm değil; günlük değişimi izlemek için bir işaret. Trend noktaları İBB Açık Veri Portalı’ndaki İSKİ kayıtlarından alındı: ${liveSnapshot.trend.map(point => `${point.date} %${point.value.toFixed(2).replace('.', ',')}`).join(' · ')}.`;
+      document.getElementById('trend-source-note').textContent = `Bu sayı tek başına bir alarm değil; günlük değişimi izlemek için bir işaret. Trend noktaları İSKİ’nin günlük ölçümleridir (${reservoir.source || 'İSKİ'} üzerinden alındı): ${liveSnapshot.trend.map(point => `${point.date} %${point.value.toFixed(2).replace('.', ',')}`).join(' · ')}.`;
     }
     if (reservoir.criticalDam) {
       liveSnapshot.criticalDam = reservoir.criticalDam;

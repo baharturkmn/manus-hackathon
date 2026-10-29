@@ -1,23 +1,18 @@
 // Live city data loaders. scripts/update-live-data.mjs runs them server-side
 // (hourly GitHub Action) and writes public/data/live.json, which the page reads.
 // Every loader returns null instead of guessing when a source is unreachable or
-// its schema changed; the page then keeps the dated 12 October 2026 snapshot.
-export const IBB_CKAN_BASE = 'https://data.ibb.gov.tr/api/3/action';
+// its markup changed; the page then keeps the last good values (or the dated
+// 12 October 2026 snapshot) and says so.
+//
+// Reservoir data: İSKİ and İBB only answer Turkish IPs, so İSKİ's published
+// figures are read from dolulukorani.com, which republishes them daily.
+export const DOLULUK_URL = 'https://www.dolulukorani.com/il/istanbul';
+export const DOLULUK_SOURCE = 'dolulukorani.com · İSKİ verisi';
 export const MGM_SERVICE_BASE = 'https://servis.mgm.gov.tr/web';
 export const MGM_CITY = 'İstanbul';
 
-const DAM_COLUMNS = {
-  omerli: 'Ömerli', darlik: 'Darlık', elmali: 'Elmalı', terkos: 'Terkos', alibey: 'Alibey',
-  buyukcekmece: 'Büyükçekmece', sazlidere: 'Sazlıdere', istrancalar: 'Istrancalar',
-  kazandere: 'Kazandere', pabucdere: 'Pabuçdere'
-};
-
 const TR_MONTHS = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 const TR_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
-
-function fold(text) {
-  return String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ı/g, 'i').toLowerCase().replace(/[^a-z0-9]/g, '');
-}
 
 export function parsePercent(value) {
   if (value === null || value === undefined || value === '') return null;
@@ -45,37 +40,57 @@ export function numericDateLabel(date) {
   return `${String(date.getUTCDate()).padStart(2, '0')}.${String(date.getUTCMonth() + 1).padStart(2, '0')}.${date.getUTCFullYear()}`;
 }
 
-function findField(fieldIds, patterns) {
-  return fieldIds.find(id => patterns.some(pattern => pattern.test(fold(id))));
+const TR_MONTHS_LONG = ['ocak', 'şubat', 'mart', 'nisan', 'mayıs', 'haziran', 'temmuz', 'ağustos', 'eylül', 'ekim', 'kasım', 'aralık'];
+
+// "29 Ekim 2026" → Date (UTC midnight).
+export function parseTurkishDate(text) {
+  const match = String(text ?? '').trim().toLocaleLowerCase('tr').match(/^(\d{1,2})\s+(\p{L}+)\s+(\d{4})/u);
+  const month = match ? TR_MONTHS_LONG.indexOf(match[2]) : -1;
+  return month >= 0 ? new Date(Date.UTC(+match[3], month, +match[1])) : null;
 }
 
-// Reads a CKAN datastore page of İSKİ reservoir records. Accepts either a
-// general-occupancy column or per-dam columns; returns null if neither exists.
-export function parseDamRecords(fields, records, trendLength = 5) {
-  const fieldIds = (fields || []).map(field => field.id ?? field).filter(id => id !== '_id');
-  const dateField = findField(fieldIds, [/^tarih/, /^date/]);
-  if (!dateField || !Array.isArray(records)) return null;
-  const generalField = findField(fieldIds, [/genel.*doluluk/, /general.*occupancy/, /^doluluk(orani)?$/]);
-  const damFields = fieldIds.filter(id => DAM_COLUMNS[fold(id)]);
-  const rows = records
-    .map(record => {
-      const date = parseDate(record[dateField]);
-      const dams = damFields
-        .map(id => ({ name: DAM_COLUMNS[fold(id)], occupancy: parsePercent(record[id]) }))
-        .filter(dam => dam.occupancy !== null);
-      return { date, general: generalField ? parsePercent(record[generalField]) : null, dams };
-    })
-    .filter(row => row.date)
+function cellText(html) {
+  return html.replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function readTables(html) {
+  return (String(html).match(/<table[\s\S]*?<\/table>/g) || []).map(table => ({
+    headers: [...table.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/g)].map(match => cellText(match[1]).toLocaleLowerCase('tr')),
+    rows: [...table.matchAll(/<tr\b([^>]*)>([\s\S]*?)<\/tr>/g)].map(([, attrs, body]) => ({
+      group: /dam-group-row/.test(attrs) ? cellText(body).toLocaleLowerCase('tr') : null,
+      cells: [...body.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map(match => cellText(match[1]))
+    }))
+  }));
+}
+
+// Reads the Istanbul page of dolulukorani.com: the "Tarih / Doluluk / Günlük
+// değişim" table gives the latest İSKİ measurement and recent trend, the
+// "Baraj Adı … Doluluk Oranı" table the single dams (only the measured group,
+// which the city rate is computed from). Returns null when the tables are gone.
+export function parseDolulukPage(html, trendLength = 5) {
+  const tables = readTables(html);
+  const daily = tables.find(table => table.headers[0] === 'tarih' && table.headers[1] === 'doluluk' && table.headers.some(h => h.includes('günlük')));
+  const series = (daily?.rows || [])
+    .map(row => ({ date: parseTurkishDate(row.cells[0]), value: parsePercent(row.cells[1]) }))
+    .filter(point => point.date && point.value !== null)
     .sort((a, b) => a.date - b.date);
-  const general = rows.filter(row => row.general !== null);
-  const withDams = rows.filter(row => row.dams.length);
-  if (!general.length && !withDams.length) return null;
-  const latestDams = withDams.at(-1);
-  const lowestDam = latestDams ? latestDams.dams.reduce((low, dam) => (dam.occupancy < low.occupancy ? dam : low)) : null;
+  if (!series.length) return null;
+  const latest = series.at(-1);
+
+  const damTable = tables.find(table => table.headers.includes('baraj adı') && table.headers.some(h => h.includes('doluluk')));
+  const rateColumn = damTable ? damTable.headers.findIndex(h => h.includes('doluluk')) : -1;
+  let inMeasuredGroup = true;
+  const dams = [];
+  for (const row of damTable?.rows || []) {
+    if (row.group !== null) { inMeasuredGroup = row.group.startsWith('ölçülen'); continue; }
+    const occupancy = parsePercent(row.cells[rateColumn]);
+    if (inMeasuredGroup && row.cells[0] && occupancy !== null) dams.push({ name: row.cells[0].replace(/\s+Barajı$/u, ''), occupancy });
+  }
+  const lowest = dams.length ? dams.reduce((low, dam) => (dam.occupancy < low.occupancy ? dam : low)) : null;
   return {
-    latest: general.length ? { date: general.at(-1).date, occupancy: general.at(-1).general } : null,
-    trend: general.slice(-trendLength).map(row => ({ date: shortDateLabel(row.date), value: row.general, isoDate: row.date })),
-    criticalDam: lowestDam ? { ...lowestDam, date: latestDams.date } : null
+    latest: { date: latest.date, occupancy: latest.value },
+    trend: series.slice(-trendLength).map(point => ({ date: shortDateLabel(point.date), value: point.value, isoDate: point.date })),
+    criticalDam: lowest ? { ...lowest, date: latest.date } : null
   };
 }
 
@@ -143,32 +158,20 @@ async function fetchJson(fetchImpl, url, timeoutMs, headers = {}) {
   }
 }
 
-// Finds İSKİ dam datasets on the İBB open data portal and reads their newest records.
-export async function loadLiveReservoir({ fetchImpl = globalThis.fetch, timeoutMs = 8000, maxResources = 6 } = {}) {
+export async function loadLiveReservoir({ fetchImpl = globalThis.fetch, timeoutMs = 8000, log = () => {} } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const search = await fetchJson(fetchImpl, `${IBB_CKAN_BASE}/package_search?q=${encodeURIComponent('baraj doluluk')}&rows=10`, timeoutMs);
-    const resources = (search?.result?.results || [])
-      .flatMap(pkg => pkg.resources || [])
-      .filter(resource => resource.datastore_active)
-      .slice(0, maxResources);
-    let latest = null, trend = [], criticalDam = null;
-    for (const resource of resources) {
-      const id = encodeURIComponent(resource.id);
-      const head = await fetchJson(fetchImpl, `${IBB_CKAN_BASE}/datastore_search?resource_id=${id}&limit=0`, timeoutMs);
-      const total = Number(head?.result?.total) || 0;
-      if (!total) continue;
-      // Records are appended chronologically; read the tail and sort by parsed date,
-      // because date columns are often stored as text.
-      const page = await fetchJson(fetchImpl, `${IBB_CKAN_BASE}/datastore_search?resource_id=${id}&limit=40&offset=${Math.max(0, total - 40)}`, timeoutMs);
-      const parsed = parseDamRecords(page?.result?.fields || head?.result?.fields, page?.result?.records);
-      if (!parsed) continue;
-      if (parsed.latest && (!latest || parsed.latest.date > latest.date)) { latest = parsed.latest; trend = parsed.trend; }
-      if (parsed.criticalDam && (!criticalDam || parsed.criticalDam.date > criticalDam.date)) criticalDam = parsed.criticalDam;
-      if (latest && criticalDam) break;
-    }
-    return latest ? { latest, trend, criticalDam, source: 'İBB Açık Veri Portalı · İSKİ' } : null;
-  } catch {
+    const response = await fetchImpl(DOLULUK_URL, { signal: controller.signal, headers: { Accept: 'text/html', 'User-Agent': 'SuNobeti/1.0 (+https://github.com/baharturkmn/manus-hackathon)' } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const parsed = parseDolulukPage(await response.text());
+    if (!parsed) log('sayfadaki doluluk tablosu tanınmadı');
+    return parsed ? { ...parsed, source: DOLULUK_SOURCE } : null;
+  } catch (error) {
+    log(`hata: ${error?.message || error}${error?.cause ? ` · neden: ${error.cause.code || ''} ${error.cause.message || error.cause}` : ''}`);
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -191,13 +194,11 @@ function isoDay(date) {
 
 // Shapes freshly loaded data for public/data/live.json. A source that failed
 // this run keeps its previous good block, so one outage does not blank the page.
-// `via` records how each source was reached ('direct' or 'apify-proxy').
-export function buildLiveFile({ reservoir, weather, previous = null, now = new Date(), via = {} }) {
+export function buildLiveFile({ reservoir, weather, previous = null, now = new Date() }) {
   return {
     version: 1,
     reservoir: reservoir ? {
       source: reservoir.source,
-      via: via.reservoir ?? 'direct',
       fetchedAt: now.toISOString(),
       measuredOn: isoDay(reservoir.latest.date),
       occupancy: Number(reservoir.latest.occupancy.toFixed(2)),
@@ -206,7 +207,6 @@ export function buildLiveFile({ reservoir, weather, previous = null, now = new D
     } : previous?.reservoir ?? null,
     forecast: weather ? {
       source: weather.source,
-      via: via.forecast ?? 'direct',
       fetchedAt: now.toISOString(),
       days: weather.forecast.map(day => ({ date: isoDay(day.isoDate), event: day.event, code: day.code, rainSignal: day.rainSignal, low: day.low, high: day.high }))
     } : previous?.forecast ?? null
