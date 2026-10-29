@@ -59,14 +59,10 @@ if (process.env.LIVE_SOURCES === 'forecast') {
       const response = await fetch(url, { signal: AbortSignal.timeout(20000), headers: { 'User-Agent': 'Mozilla/5.0 SuNobeti/1.0', Accept: 'text/html' } });
       const html = await response.text();
       console.log(`probe ${url}: ${response.status} ${response.headers.get('content-type')} · ${html.length} bytes`);
-      const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
-      for (const [, attrs, body] of scripts) console.log(`  script ${attrs.trim().slice(0, 120)} · ${body.length} chars · ${body.replace(/\s+/g, ' ').slice(0, 300)}`);
-      for (const match of html.matchAll(/(?:fetch|axios|\$\.(?:get|ajax|getJSON))\s*\(\s*['"`]([^'"`]+)/g)) console.log(`  request ${match[1]}`);
-      const text = html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
-      for (let i = 0; i < Math.min(text.length, 6000); i += 1500) console.log(`  text[${i}] ${text.slice(i, i + 1500)}`);
       const tables = html.match(/<table[\s\S]*?<\/table>/g) || [];
-      console.log(`  tables: ${tables.length}`);
-      tables.slice(0, 2).forEach((table, i) => console.log(`  table${i} ${table.replace(/\s+/g, ' ').slice(0, 2500)}`));
+      tables.forEach((table, i) => console.log(`  table${i} ${table.replace(/\s+/g, ' ').slice(0, i >= 2 ? 6000 : 400)}`));
+      const schedule = html.match(/schedule<\/span>([\s\S]{0,300})/);
+      console.log(`  schedule ${schedule ? schedule[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ') : 'none'}`);
     } catch (error) {
       console.log(`probe ${url}: ${error.message} ${error.cause?.code || ''}`);
     }
