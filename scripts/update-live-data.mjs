@@ -52,6 +52,17 @@ async function load(name, loader, host) {
   return { data: null };
 }
 
+// Temporary reachability check for alternative İSKİ sources (remove once a source is chosen).
+for (const url of ['https://iski.istanbul/baraj-doluluk/', 'https://www.iski.istanbul/web/tr-TR/baraj-doluluk', 'https://iskiapi.iski.istanbul/']) {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(15000), redirect: 'manual' });
+    const text = await response.text();
+    console.log(`probe ${url}: ${response.status} ${response.headers.get('location') || ''} · ${text.length} bytes · ${text.replace(/\s+/g, ' ').slice(0, 160)}`);
+  } catch (error) {
+    console.log(`probe ${url}: ${error.message} ${error.cause?.code || ''}`);
+  }
+}
+
 let previous = null;
 try { previous = JSON.parse(await readFile(target, 'utf8')); } catch { /* first run */ }
 
