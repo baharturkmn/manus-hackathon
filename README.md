@@ -34,6 +34,10 @@ Canlı şehir verisi sunucu tarafında toplanır: `.github/workflows/update-live
 
 İş akışı GitHub'ın zamanlanmış çalıştırma kuralı gereği yalnızca varsayılan dalda (main) çalışır; Actions sekmesinden "Run workflow" ile elle de tetiklenebilir. Güncellenen dosyanın yayına çıkması için sitenin depodaki her commit'te yeniden yayımlanması gerekir.
 
+## Yayın
+
+Site GitHub Pages'te yayımlanır: https://baharturkmn.github.io/manus-hackathon/ . `.github/workflows/deploy-pages.yml` her `main` push'unda ve saatlik veri işi bittikten sonra testleri çalıştırır, `vite build --base=/manus-hackathon/` ile derler ve yayımlar. Bir kez **Settings → Pages → Source: GitHub Actions** seçilmelidir. Manus'taki ilk yayın bu depodan beslenmez; güncel veri yalnızca bu yayında görünür.
+
 ## Kaynak sürüm
 
 Bu depo Manus projesinin bağımsız kopyasıdır; sitenin ana deposu veya yayını bu depoya taşınmamıştır. Kaynak sürüm: `fac6a7f3f6648f29106c8eef2edccff22638e8ef`.
