@@ -29,6 +29,14 @@ Canlı şehir verisi sunucu tarafında toplanır: `.github/workflows/update-live
 
 Bir kaynak GitHub sunucusundan gelen isteği reddederse betik aynı isteği Apify Proxy üzerinden tekrarlar: önce Türkiye çıkışlı residential, plan buna izin vermezse datacenter (`auto`). Bunun için depo ayarlarında `APIFY_PROXY_PASSWORD` gizli anahtarı tanımlanmalıdır; proxy grubu/ülkesi isteğe bağlı `APIFY_PROXY_USERNAME` değişkeniyle değiştirilebilir. `live.json` içindeki `via` alanı verinin doğrudan mı Apify üzerinden mi alındığını kaydeder.
 
+### İSKİ verisi için Türkiye'deki runner
+
+İSKİ ve İBB sunucuları yalnızca Türkiye IP'lerinden gelen bağlantıları kabul ediyor (GitHub, Apify datacenter ve yurt dışı sunucular zaman aşımına düşüyor). Bu yüzden iş akışı iki işe ayrılır: `forecast` (MGM) GitHub'ın sunucusunda, `reservoir` (İSKİ/İBB) ise Türkiye'deki bir makinede kurulu, `turkiye` etiketli self-hosted runner üzerinde çalışır. Makine kapalıyken baraj işi kuyrukta bekler; sayfa son ölçümü tarihiyle göstermeye devam eder. İki iş aynı `live.json` dosyasını güncellediği için `scripts/commit-live-data.sh` gönderim çakışmasında en güncel sürümü alıp yalnızca kendi kısmını yeniden yazar.
+
+Kurulum: depo **Settings → Actions → Runners → New self-hosted runner**, işletim sistemini seç, gösterilen komutları çalıştır; `config.sh` etiket sorduğunda `turkiye` yaz. Makine açıldığında kendiliğinden başlaması için runner klasöründe `./svc.sh install` ve `./svc.sh start`. Depo herkese açık olduğundan iş akışı yalnızca zamanlama ve elle başlatma ile tetiklenir; dış katkıcıların PR iş akışları için **Settings → Actions → General → Require approval for all outside collaborators** seçili olmalıdır.
+
+Elle güncelleme: Türkiye'deki bir makinede `npm run update-data` veriyi çeker ve `public/data/live.json` dosyasını yazar.
+
 İş akışı GitHub'ın zamanlanmış çalıştırma kuralı gereği yalnızca varsayılan dalda (main) çalışır; Actions sekmesinden "Run workflow" ile elle de tetiklenebilir. Güncellenen dosyanın yayına çıkması için sitenin depodaki her commit'te yeniden yayımlanması gerekir. Apify MGM doğrulama kaydı `public/data/apify-mgm-verification.json` dosyasındadır. Yedi günlük kritik mod kuralı eksik tahmin günleri için varsayım yapmaz.
 
 Fatura geçmişi, görevler ve profil yalnızca tarayıcı localStorage hafızasında tutulur; gerçek kullanıcı doğrulaması veya sunucu veritabanı yoktur. OCR tarayıcıda Tesseract.js ile yapılır ve sonuçlar düzenlenebilir. Fatura karşılaştırması toplam tüketim değişimini gösterir; alışkanlık kategorisi kullanıcı bildirimine dayanır, cihaz bazlı ölçüm değildir.

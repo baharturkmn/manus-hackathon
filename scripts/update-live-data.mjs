@@ -55,12 +55,25 @@ async function load(name, loader, host) {
 let previous = null;
 try { previous = JSON.parse(await readFile(target, 'utf8')); } catch { /* first run */ }
 
+// LIVE_SOURCES picks what this run fetches: "forecast" (GitHub-hosted job),
+// "reservoir" (self-hosted job on a Turkish IP; İSKİ/İBB refuse foreign IPs) or
+// "all" (default, e.g. a manual run on a machine in Turkey). A source that is
+// not fetched keeps its previous block in live.json.
+const sources = (process.env.LIVE_SOURCES || 'all').split(',').map(item => item.trim());
+const wants = name => sources.includes('all') || sources.includes(name);
+const skipped = { data: null, skipped: true };
+
 const [reservoir, weather] = await Promise.all([
-  load('İSKİ/İBB', fetchImpl => loadLiveReservoir({ fetchImpl, timeoutMs, log: line => console.log(`  [İBB] ${line}`) }), 'data.ibb.gov.tr'),
-  load('MGM', fetchImpl => loadLiveForecast({ fetchImpl, timeoutMs, headers: mgmHeaders }), 'servis.mgm.gov.tr')
+  wants('reservoir')
+    ? load('İSKİ/İBB', fetchImpl => loadLiveReservoir({ fetchImpl, timeoutMs, log: line => console.log(`  [İBB] ${line}`) }), 'data.ibb.gov.tr')
+    : skipped,
+  wants('forecast')
+    ? load('MGM', fetchImpl => loadLiveForecast({ fetchImpl, timeoutMs, headers: mgmHeaders }), 'servis.mgm.gov.tr')
+    : skipped
 ]);
-console.log(`İSKİ/İBB: ${reservoir.data ? `ok (${reservoir.via}) · %${reservoir.data.latest.occupancy.toFixed(2)} · ${reservoir.data.latest.date.toISOString().slice(0, 10)}` : 'failed'}`);
-console.log(`MGM: ${weather.data ? `ok (${weather.via}) · ${weather.data.forecast.length} days` : 'failed'}`);
+const status = (result, ok) => (result.skipped ? 'skipped' : result.data ? ok : 'failed');
+console.log(`İSKİ/İBB: ${status(reservoir, reservoir.data && `ok (${reservoir.via}) · %${reservoir.data.latest.occupancy.toFixed(2)} · ${reservoir.data.latest.date.toISOString().slice(0, 10)}`)}`);
+console.log(`MGM: ${status(weather, weather.data && `ok (${weather.via}) · ${weather.data.forecast.length} days`)}`);
 
 const next = buildLiveFile({
   reservoir: reservoir.data, weather: weather.data, previous,
@@ -71,4 +84,5 @@ else if (next.reservoir || next.forecast) {
   await writeFile(target, `${JSON.stringify(next, null, 2)}\n`);
   console.log('live.json updated.');
 }
-if (!reservoir.data && !weather.data) process.exitCode = 1;
+const attempted = [reservoir, weather].filter(result => !result.skipped);
+if (attempted.length && attempted.every(result => !result.data)) process.exitCode = 1;

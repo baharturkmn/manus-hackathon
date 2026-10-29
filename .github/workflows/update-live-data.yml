@@ -8,34 +8,58 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: update-live-data
-  cancel-in-progress: false
-
 jobs:
-  update:
+  # MGM answers GitHub's runners, so the forecast is fetched here.
+  forecast:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: live-data-forecast
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Fetch İSKİ and MGM data
+      - name: Fetch MGM forecast
         env:
-          # Optional: enables the Apify Proxy retry when a source refuses GitHub's runners.
+          LIVE_SOURCES: forecast
+        run: node scripts/update-live-data.mjs
+      - name: Commit changed data
+        env:
+          LIVE_SOURCES: forecast
+        run: scripts/commit-live-data.sh "Update live MGM forecast"
+
+  # İSKİ and İBB only accept Turkish IPs, so this job runs on a self-hosted
+  # runner in Turkey labelled "turkiye". While that machine is offline the job
+  # waits in the queue (and is superseded by the next hour's run); the page keeps
+  # showing the last measurement with its date.
+  reservoir:
+    runs-on: [self-hosted, turkiye]
+    timeout-minutes: 10
+    concurrency:
+      group: live-data-reservoir
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Fetch İSKİ reservoir data
+        env:
+          LIVE_SOURCES: reservoir
           APIFY_PROXY_PASSWORD: ${{ secrets.APIFY_PROXY_PASSWORD }}
           APIFY_PROXY_USERNAME: ${{ vars.APIFY_PROXY_USERNAME }}
         run: node scripts/update-live-data.mjs
       - name: Commit changed data
-        run: |
-          if git diff --quiet -- public/data/live.json && ! git ls-files --others --exclude-standard -- public/data/live.json | grep -q .; then
-            echo "No data change."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/data/live.json
-          git commit -m "Update live İSKİ/MGM data"
-          git push
+        env:
+          LIVE_SOURCES: reservoir
+        run: scripts/commit-live-data.sh "Update live İSKİ reservoir data"
