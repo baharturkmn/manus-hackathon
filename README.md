@@ -25,7 +25,7 @@ Sekmeli arayüz; İSKİ baraj doluluk görünümü; MGM yağış sinyali; sekiz 
 
 ## Demo sınırları
 
-Baraj ve tahmin verileri 12 Ekim 2026 tarihli doğrulanmış bir anlık kayıttır; her sayfa açılışında otomatik canlı veri çekilmez. Apify MGM doğrulama kaydı `public/data/apify-mgm-verification.json` dosyasındadır. Yedi günlük kritik mod kuralı eksik tahmin günleri için varsayım yapmaz.
+Sayfa her açılışta tarayıcıdan canlı veri ister: baraj doluluğu İBB Açık Veri Portalı'ndaki İSKİ kayıtlarından (`data.ibb.gov.tr`), yağış tahmini MGM'nin günlük tahmin servisinden (`servis.mgm.gov.tr`) alınır (`live-data.mjs`). İSKİ günde bir kez yayımladığı için gösterilen değer en son yayımlanan ölçümdür ve ölçüm tarihi ekranda yazar. Bir kaynak yanıt vermezse, CORS engeline takılırsa veya beklenen alanları içermezse değer uydurulmaz; sayfa 12 Ekim 2026 tarihli doğrulanmış kayda döner ve bunu "canlı veri alınamadı" diye açıkça belirtir. Apify MGM doğrulama kaydı `public/data/apify-mgm-verification.json` dosyasındadır. Yedi günlük kritik mod kuralı eksik tahmin günleri için varsayım yapmaz.
 
 Fatura geçmişi, görevler ve profil yalnızca tarayıcı localStorage hafızasında tutulur; gerçek kullanıcı doğrulaması veya sunucu veritabanı yoktur. OCR tarayıcıda Tesseract.js ile yapılır ve sonuçlar düzenlenebilir. Fatura karşılaştırması toplam tüketim değişimini gösterir; alışkanlık kategorisi kullanıcı bildirimine dayanır, cihaz bazlı ölçüm değildir.
 

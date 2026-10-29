@@ -4,6 +4,7 @@ import { getPartnerOffer, BRAND_DISCOUNTS } from './partner-offers.mjs';
 import { initializeWorkspaceTabs } from './workspace-tabs.mjs';
 import { initializeDemoProfile } from './demo-profile.mjs';
 import { milestoneReached, recommendHabitPartner } from './habit-rewards.mjs';
+import { loadLiveReservoir, loadLiveForecast, knownFutureDays, istanbulToday, numericDateLabel } from './live-data.mjs';
 
 const liveSnapshot = {
   verifiedAt: '12 Ekim 2026 · 10:00 TSİ',
@@ -51,12 +52,15 @@ const verifiedHistoryStorageKey = 'sunobeti-verified-history-v1';
 const billHistoryStorageKey = 'sunobeti-bill-history-v1';
 const communityBaselineLiters = 12480;
 const billState = { previous: {}, current: {} };
+// Which parts of liveSnapshot came from a live request on this visit.
+const dataState = { reservoirLive: false, forecastLive: false, measuredLabel: '12.10.2026', fetchedAt: null };
 
 function decideMode(data) {
   const rainfallAhead = data.forecast.some(day => day.rainSignal);
   const sevenDayWindowComplete = data.forecastWindowDays >= 7;
-  const critical = data.occupancy < data.threshold && sevenDayWindowComplete && !rainfallAhead;
-  return { critical, rainfallAhead, sevenDayWindowComplete };
+  const belowThreshold = data.occupancy < data.threshold;
+  const critical = belowThreshold && sevenDayWindowComplete && !rainfallAhead;
+  return { critical, belowThreshold, rainfallAhead, sevenDayWindowComplete, windowDays: data.forecastWindowDays };
 }
 
 function applyMode(mode) {
@@ -85,14 +89,32 @@ function applyMode(mode) {
     thresholdResult.textContent = 'Evet · eşik aşılmış durumda';
     rainCheck.textContent = '✓'; rainCheck.className = 'check-pass';
   } else {
+    document.body.classList.remove('critical-mode');
+    pill.className = 'mode-pill calm';
+    outcome.className = 'logic-outcome calm';
+    outcome.innerHTML = '<span>BUGÜNÜN ÇIKTISI</span><b>DİKKATLİ KAL</b><small>Kritik mod kapalı</small>';
     title.textContent = 'Dikkatli Kal';
-    description.textContent = 'Bugün kritik eşik aşılmadı.';
-    result.textContent = `Bugün kritik eşik aşılmadığı${mode.rainfallAhead ? ' ve yağış sinyali görüldüğü' : ''} için sakin ama dikkatli kalma mesajı gösteriliyor.${!mode.sevenDayWindowComplete ? ' MGM şehir sayfası şu an 5 gün gösterdiğinden, eksik 6–7. gün için sistem varsayım yapmaz.' : ''}`;
-    thresholdCheck.textContent = '×'; thresholdCheck.className = 'check-fail';
-    thresholdExpression.textContent = `${liveSnapshot.occupancy.toFixed(2)}% > ${liveSnapshot.threshold}%`;
-    thresholdResult.textContent = 'Hayır · eşik aşılmadı';
+    const windowNote = !mode.sevenDayWindowComplete ? ` MGM tahmini şu an ${mode.windowDays} ileri gün gösterdiğinden, eksik günler için sistem varsayım yapmaz.` : '';
+    if (mode.belowThreshold) {
+      description.textContent = 'Rezerv eşik altında; yağış koşulu kritik modu açmıyor.';
+      result.textContent = `Rezerv %${liveSnapshot.threshold} eşiğinin altında, ancak ${mode.rainfallAhead ? 'yağış sinyali görüldüğü' : '7 günlük yağış penceresi doğrulanamadığı'} için kritik mod açılmadı; dikkatli kalma mesajı gösteriliyor.${windowNote}`;
+      thresholdCheck.textContent = '✓'; thresholdCheck.className = 'check-pass';
+      thresholdExpression.textContent = `${liveSnapshot.occupancy.toFixed(2)}% < ${liveSnapshot.threshold}%`;
+      thresholdResult.textContent = 'Evet · eşik aşılmış durumda';
+    } else {
+      description.textContent = 'Bugün kritik eşik aşılmadı.';
+      result.textContent = `Bugün kritik eşik aşılmadığı${mode.rainfallAhead ? ' ve yağış sinyali görüldüğü' : ''} için sakin ama dikkatli kalma mesajı gösteriliyor.${windowNote}`;
+      thresholdCheck.textContent = '×'; thresholdCheck.className = 'check-fail';
+      thresholdExpression.textContent = `${liveSnapshot.occupancy.toFixed(2)}% ≥ ${liveSnapshot.threshold}%`;
+      thresholdResult.textContent = 'Hayır · eşik aşılmadı';
+    }
     rainCheck.textContent = mode.rainfallAhead ? '↗' : '✓'; rainCheck.className = mode.rainfallAhead ? 'check-warn' : 'check-pass';
   }
+  const rainDays = liveSnapshot.forecast.filter(day => day.rainSignal);
+  document.getElementById('rain-expression').textContent = mode.rainfallAhead ? 'Yağış sinyali var' : 'Yağış sinyali yok';
+  document.getElementById('rain-detail').textContent = rainDays.length
+    ? `${rainDays[0].date}${rainDays.length > 1 ? `–${rainDays.at(-1).date}` : ''} MGM’de ${rainDays.map(day => day.event.toLocaleLowerCase('tr')).filter((event, i, all) => all.indexOf(event) === i).slice(0, 2).join(' / ')}`
+    : `MGM’nin ${mode.windowDays} günlük görünümünde yağış sinyali yok`;
 }
 
 function renderChart(data) {
@@ -112,13 +134,13 @@ function renderChart(data) {
 }
 
 function renderForecast(forecast) {
-  const icons = { cloud: '☁', storm: 'ϟ' };
+  const icons = { cloud: '☁', storm: 'ϟ', rain: '☂', clear: '☀', unknown: '?' };
   document.getElementById('forecast-strip').innerHTML = forecast.map((day, index) => `
     <article class="forecast-day ${index === 0 ? 'today' : ''} ${day.code === 'storm' ? 'storm' : ''}">
       <p>${day.date} · ${day.name}</p>
       <h3>${day.event}</h3>
-      <div class="weather-symbol" aria-hidden="true">${icons[day.code]}</div>
-      <div class="temps">${day.high}° <span>/ ${day.low}°</span></div>
+      <div class="weather-symbol" aria-hidden="true">${icons[day.code] ?? '?'}</div>
+      <div class="temps">${day.high ?? '–'}° <span>/ ${day.low ?? '–'}°</span></div>
     </article>`).join('');
 }
 
@@ -210,7 +232,7 @@ function drawBadgeCard() {
   ctx.fillText('SuNöbeti today', 104, 580);
   ctx.fillStyle = '#087fa1'; ctx.font = '500 28px "DM Mono", monospace'; ctx.fillText('TODAY’S RESERVOIR', 104, 735);
   ctx.fillStyle = '#0c2833'; ctx.font = '800 116px "Manrope", sans-serif'; ctx.fillText(`${liveSnapshot.occupancy.toFixed(2)}%`, 100, 875);
-  ctx.fillStyle = '#54717a'; ctx.font = '400 24px "DM Mono", monospace'; ctx.fillText('İSKİ · 12.10.2026 · SU NÖBETİ', 104, 965);
+  ctx.fillStyle = '#54717a'; ctx.font = '400 24px "DM Mono", monospace'; ctx.fillText(`İSKİ · ${dataState.measuredLabel} · SU NÖBETİ`, 104, 965);
 }
 
 function updateBadgeCard(tasks, selected) {
@@ -520,11 +542,15 @@ function wireBillUpload() {
   });
 }
 
+function badgeFileName() {
+  return `sunobeti-badge-${liveSnapshot.occupancy.toFixed(2).replace('.', '-')}.png`;
+}
+
 function downloadBadge() {
   const canvas = document.getElementById('badge-canvas');
   canvas.toBlob(blob => {
     const link = document.createElement('a');
-    link.download = 'sunobeti-badge-38-11.png';
+    link.download = badgeFileName();
     link.href = URL.createObjectURL(blob);
     link.click();
     URL.revokeObjectURL(link.href);
@@ -535,9 +561,9 @@ async function shareBadge() {
   const canvas = document.getElementById('badge-canvas');
   const status = document.getElementById('badge-share-status');
   canvas.toBlob(async blob => {
-    const file = new File([blob], 'sunobeti-badge-38-11.png', { type: 'image/png' });
+    const file = new File([blob], badgeFileName(), { type: 'image/png' });
     if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
-      try { await navigator.share({ files: [file], title: 'SuNöbeti', text: "I'm part of SuNöbeti today · %38.11" }); status.textContent = 'Paylaşım penceresi açıldı.'; }
+      try { await navigator.share({ files: [file], title: 'SuNöbeti', text: `I'm part of SuNöbeti today · %${liveSnapshot.occupancy.toFixed(2)}` }); status.textContent = 'Paylaşım penceresi açıldı.'; }
       catch { status.textContent = 'Paylaşım iptal edildi; kart hazır.'; }
     } else {
       downloadBadge();
@@ -639,23 +665,84 @@ function wireBadgeButtons() {
   document.getElementById('share-badge')?.addEventListener('click', shareBadge);
 }
 
-function initialize() {
-  const mode = decideMode(liveSnapshot);
+function renderCityData() {
   document.getElementById('city-summary-occupancy').textContent = `%${liveSnapshot.occupancy.toFixed(2).replace('.', ',')}`;
   document.getElementById('occupancy-value').textContent = liveSnapshot.occupancy.toFixed(2);
   document.getElementById('orb-label').textContent = `${liveSnapshot.occupancy.toFixed(2)}%`;
   document.getElementById('reserve-meter-fill').style.width = `${liveSnapshot.occupancy}%`;
   document.getElementById('critical-dam-name').textContent = liveSnapshot.criticalDam.name;
   document.getElementById('critical-dam-value').textContent = liveSnapshot.criticalDam.occupancy.toFixed(2);
+  const first = liveSnapshot.trend[0].value;
+  document.getElementById('trend-change').textContent = `${(liveSnapshot.occupancy - first).toFixed(2).replace('-', '−')} pp`;
+  applyMode(decideMode(liveSnapshot));
+  renderChart(liveSnapshot.trend);
+  renderForecast(liveSnapshot.forecast);
+  if (!document.getElementById('badge-panel')?.hidden) drawBadgeCard();
+}
+
+function fetchedAtLabel(date) {
+  return new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
+}
+
+function renderDataStatus() {
+  const status = document.getElementById('live-data-status');
+  const fetched = dataState.fetchedAt ? fetchedAtLabel(dataState.fetchedAt) : '';
+  const parts = [
+    dataState.reservoirLive
+      ? `Baraj: canlı · İBB Açık Veri (İSKİ) · ölçüm ${dataState.measuredLabel}`
+      : 'Baraj: canlı veri alınamadı · 12.10.2026 tarihli doğrulanmış kayıt',
+    dataState.forecastLive ? 'Yağış: canlı · MGM' : 'Yağış: canlı veri alınamadı · 12.10.2026 MGM/Apify kaydı'
+  ];
+  status.textContent = `${parts.join(' — ')}${fetched ? ` · kontrol ${fetched} TSİ` : ''}`;
+  document.getElementById('occupancy-badge').textContent = dataState.reservoirLive ? 'CANLI · İSKİ' : 'TARİHLİ KAYIT';
+}
+
+// Replaces the dated snapshot only with values a live source actually returned.
+async function refreshLiveData() {
+  const [reservoir, weather] = await Promise.all([loadLiveReservoir(), loadLiveForecast()]);
+  dataState.fetchedAt = new Date();
+  if (reservoir) {
+    const measured = numericDateLabel(reservoir.latest.date);
+    liveSnapshot.occupancy = reservoir.latest.occupancy;
+    if (reservoir.trend.length >= 2) liveSnapshot.trend = reservoir.trend;
+    dataState.reservoirLive = true;
+    dataState.measuredLabel = measured;
+    document.getElementById('city-summary-date').textContent = `İSTANBUL · ${measured}`;
+    document.getElementById('hero-date').textContent = `İSTANBUL · ${measured}`;
+    document.getElementById('occupancy-measured').textContent = `${measured} · İSKİ`;
+    if (liveSnapshot.trend === reservoir.trend) {
+      const range = `${liveSnapshot.trend[0].date} – ${liveSnapshot.trend.at(-1).date}`;
+      document.getElementById('trend-range').textContent = range.toLocaleUpperCase('tr');
+      document.getElementById('trend-chart').setAttribute('aria-label', `${range} arasındaki baraj doluluk trendi`);
+      document.getElementById('trend-source-note').textContent = `Bu sayı tek başına bir alarm değil; günlük değişimi izlemek için bir işaret. Trend noktaları İBB Açık Veri Portalı’ndaki İSKİ kayıtlarından alındı: ${liveSnapshot.trend.map(point => `${point.date} %${point.value.toFixed(2).replace('.', ',')}`).join(' · ')}.`;
+    }
+    if (reservoir.criticalDam) {
+      liveSnapshot.criticalDam = reservoir.criticalDam;
+      const damDate = numericDateLabel(reservoir.criticalDam.date);
+      document.getElementById('critical-dam-source').textContent = `İSKİ tekil baraj verisi · ${reservoir.criticalDam.name} · ${damDate}`;
+      document.getElementById('critical-dam-text').textContent = `Genel ortalamadan ayrı bakıldığında, ${reservoir.criticalDam.name} ${damDate} tekil ölçümlerinde en düşük doluluğa sahip baraj.`;
+    }
+  }
+  if (weather) {
+    liveSnapshot.forecast = weather.forecast;
+    liveSnapshot.forecastWindowDays = knownFutureDays(weather.forecast, istanbulToday());
+    dataState.forecastLive = true;
+    document.getElementById('forecast-intro').textContent = `Resmî MGM günlük tahmini İstanbul için ${weather.forecast[0].date}–${weather.forecast.at(-1).date} arasını kapsıyor. Kritik mod 7 ileri günü ister; MGM daha kısa bir ufuk verdiğinde eksik günler için varsayım yapılmaz.`;
+    const rainCount = weather.forecast.filter(day => day.rainSignal).length;
+    document.getElementById('forecast-foot-note').textContent = rainCount
+      ? `MGM tahmininde ${rainCount} gün için yağış sinyali var.`
+      : 'MGM tahmininde bu ufukta yağış sinyali yok.';
+  }
+  renderCityData();
+  renderDataStatus();
+}
+
+function initialize() {
   const savedCommunityTotal = Number(localStorage.getItem(communityStorageKey) || communityBaselineLiters);
   const communityValue = document.getElementById('community-liters');
   communityValue.dataset.value = String(savedCommunityTotal);
   communityValue.textContent = formatLiters(savedCommunityTotal);
-  const first = liveSnapshot.trend[0].value;
-  document.getElementById('trend-change').textContent = `${(liveSnapshot.occupancy - first).toFixed(2).replace('-', '−')} pp`;
-  applyMode(mode);
-  renderChart(liveSnapshot.trend);
-  renderForecast(liveSnapshot.forecast);
+  renderCityData();
   renderTasks(liveSnapshot.tasks);
   renderBillHistory();
   renderPartners(liveSnapshot.partners);
@@ -668,6 +755,7 @@ function initialize() {
   if (loadBillHistory().length >= 2) renderBillComparison();
   initializeWorkspaceTabs();
   initializeDemoProfile();
+  refreshLiveData();
 }
 
 document.addEventListener('DOMContentLoaded', initialize);

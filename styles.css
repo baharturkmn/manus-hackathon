@@ -751,3 +751,4 @@ em { color: var(--water); font-style: normal; font-weight: 500; }
 .milestone-reward p { margin: 0; font-size: 11px; line-height: 1.6; color: #6e5b7d; }
 .reward-category-note { margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid var(--water); background: rgba(191,243,233,.25); color: var(--muted); font-size: 11px; line-height: 1.55; }
 @media (max-width: 540px) { .milestone-reward { flex-direction: column; align-items: flex-start; padding: 18px; gap: 12px; }.milestone-emblem { width: 82px; height: 82px; flex-basis: 82px; } }
+.live-data-status { margin: 10px 0 0; color: var(--muted); font: 10px/1.45 var(--mono); letter-spacing: .02em; }

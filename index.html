@@ -25,7 +25,7 @@
 </nav>
 <div class="hero-grid workspace-hero-grid">
 <div class="hero-copy">
-<p class="eyebrow">İSTANBUL · 12 EKİM 2026</p>
+<p class="eyebrow" id="hero-date">İSTANBUL · 12 EKİM 2026</p>
 <h1 id="page-title">Su akar.<br/><em>Veri konuşur.</em></h1>
 <p class="intro">Musluk akarken görünmeyen su stresini takip et. Günlük alışkanlıklarını seç; faturandaki gerçek değişimi gör.</p>
 
@@ -37,7 +37,7 @@
 <div class="community-counter-value"><span id="community-liters">12.480</span><small>L</small></div>
 <p id="community-contribution">Bu ziyaretteki seçimlerinle artar.</p>
 </div></div>
-</section><div class="workspace-nav" id="workspace-nav"><div class="workspace-context section-shell"><div class="city-summary"><span>İSTANBUL · 12 EKİM 2026</span><strong id="city-summary-occupancy">%38,11</strong><small>genel baraj doluluğu</small></div><div class="mode-pill calm" id="mode-pill">
+</section><div class="workspace-nav" id="workspace-nav"><div class="workspace-context section-shell"><div class="city-summary"><span id="city-summary-date">İSTANBUL · 12 EKİM 2026</span><strong id="city-summary-occupancy">%38,11</strong><small>genel baraj doluluğu</small></div><div class="mode-pill calm" id="mode-pill">
 <span class="mode-icon" id="mode-icon">≈</span>
 <span><strong id="mode-title">Dikkatli Kal</strong><small id="mode-description">Bugün kritik eşik aşılmadı.</small></span>
 </div></div><div aria-label="SuNöbeti bölümleri" class="workspace-tabs section-shell" role="tablist">
@@ -50,32 +50,33 @@
 <div class="section-kicker"> BUGÜNÜN DURUMU</div>
 <div class="status-layout">
 <article class="stat-card reveal">
-<div class="stat-head"><h2 id="status-title">Rezervde kalan</h2><span class="verified">DOĞRULANDI</span></div>
+<div class="stat-head"><h2 id="status-title">Rezervde kalan</h2><span class="verified" id="occupancy-badge">DOĞRULANDI</span></div>
 <div class="big-number"><span id="occupancy-value">38.11</span><sup>%</sup></div>
 <p>İstanbul’a su sağlayan barajların genel ortalama doluluk oranı.</p>
-<div class="stat-footer"><span>SON ÖLÇÜM</span><strong>12.10.2026 · İSKİ</strong></div>
+<div class="stat-footer"><span>SON ÖLÇÜM</span><strong id="occupancy-measured">12.10.2026 · İSKİ</strong></div>
+<p class="live-data-status" id="live-data-status" role="status" aria-live="polite">Canlı veri kontrol ediliyor…</p>
 </article>
 <article class="trend-card reveal">
 <div class="card-head"><div><p class="micro-label">YAKIN DÖNEM</p><h2>Yüzde puanı okumak</h2></div><span class="trend-change" id="trend-change">−0.31 pp</span></div>
 <div class="chart-wrap">
-<svg aria-label="1–12 Ekim 2026 arasındaki baraj doluluk trendi" id="trend-chart" role="img" viewBox="0 0 600 200"></svg>
+<svg aria-label="1–12 Ekim 2026 arasındaki baraj doluluk trendi" aria-describedby="trend-source-note" id="trend-chart" role="img" viewBox="0 0 600 200"></svg>
 </div>
-<div class="chart-legend"><span><i class="legend-dot"></i>İSKİ genel doluluk</span><span>1–12 EKİM</span></div>
+<div class="chart-legend"><span><i class="legend-dot"></i>İSKİ genel doluluk</span><span id="trend-range">1–12 EKİM</span></div>
 </article>
 </div>
 <div class="status-support-row">
 <article aria-labelledby="critical-dam-title" class="critical-dam-card">
 <div class="critical-dam-top"><span>TEKİL VERİDE EN KRİTİK NOKTA</span><span class="critical-tag">DİKKAT</span></div>
 <div class="critical-dam-main"><div><p class="micro-label">EN KRİTİK BARAJ</p><h3 id="critical-dam-title"><span id="critical-dam-name">Pabuçdere</span></h3></div><div class="critical-dam-value"><span id="critical-dam-value">2.50</span><sup>%</sup></div></div>
-<p>Genel ortalamadan ayrı bakıldığında, Pabuçdere bugün tekil ölçümlerdeki en alarm verici nokta olarak öne çıkıyor.</p>
+<p id="critical-dam-text">Genel ortalamadan ayrı bakıldığında, Pabuçdere bugün tekil ölçümlerdeki en alarm verici nokta olarak öne çıkıyor.</p>
 </article>
-<div class="status-support-note"><span class="support-number">02</span><p><strong>Bu kutu ana grafiğin yerine geçmez.</strong> Grafik İstanbul barajlarının genel ortalamasını, bu çağrı ise tek bir barajdaki en kritik değeri gösterir. İki sayı birlikte okununca krizin şehir içinde eşit dağılmadığı anlaşılır.</p><span class="support-source">İSKİ tekil baraj verisi · Pabuçdere</span></div>
+<div class="status-support-note"><span class="support-number">02</span><p><strong>Bu kutu ana grafiğin yerine geçmez.</strong> Grafik İstanbul barajlarının genel ortalamasını, bu çağrı ise tek bir barajdaki en kritik değeri gösterir. İki sayı birlikte okununca krizin şehir içinde eşit dağılmadığı anlaşılır.</p><span class="support-source" id="critical-dam-source">İSKİ tekil baraj verisi · Pabuçdere · 12.10.2026</span></div>
 </div>
-<p class="source-note">Bu sayı tek başına bir alarm değil; günlük değişimi izlemek için bir işaret. Trend noktaları doğrulanmış günlük haber kayıtlarından derlenmiştir: 1 Ekim %38,42 · 5 Ekim %38,93 · 8 Ekim %38,64 · 9 Ekim %38,64 · 12 Ekim %38,11.</p>
+<p class="source-note" id="trend-source-note">Bu sayı tek başına bir alarm değil; günlük değişimi izlemek için bir işaret. Trend noktaları doğrulanmış günlük haber kayıtlarından derlenmiştir: 1 Ekim %38,42 · 5 Ekim %38,93 · 8 Ekim %38,64 · 9 Ekim %38,64 · 12 Ekim %38,11.</p>
 </section><details class="workspace-details section-shell"><summary>Yağış tahmini ve kritik mod nasıl çalışıyor?</summary><section aria-labelledby="forecast-title" class="forecast-section section-shell">
-<div class="forecast-header"><div><div class="section-kicker"> MGM GÖRÜNÜMÜ</div><h2 id="forecast-title">Yağış sinyali<br/>ufukta var mı?</h2></div><p>Resmî MGM şehir tahmini, İstanbul için günlük hava hadisesi sunar. Apify ile alınan bugünkü kayıt 12–17 Ekim arasında bugün + 5 gelecek günü kapsıyor; 7 günlük kural, bu resmî görünüm güncellendiğinde tamamlanacak şekilde tasarlandı.</p></div>
+<div class="forecast-header"><div><div class="section-kicker"> MGM GÖRÜNÜMÜ</div><h2 id="forecast-title">Yağış sinyali<br/>ufukta var mı?</h2></div><p id="forecast-intro">Resmî MGM şehir tahmini, İstanbul için günlük hava hadisesi sunar. Apify ile alınan bugünkü kayıt 12–17 Ekim arasında bugün + 5 gelecek günü kapsıyor; 7 günlük kural, bu resmî görünüm güncellendiğinde tamamlanacak şekilde tasarlandı.</p></div>
 <div aria-label="MGM İstanbul beş günlük hava tahmini" class="forecast-strip" id="forecast-strip"></div>
-<div class="forecast-foot"><span><i class="info-dot">i</i> Apify doğrulamasında bugünden sonraki beş gün için sağanak/gök gürültülü sağanak sinyali bulundu.</span><a href="https://www.mgm.gov.tr/?il=Istanbul" rel="noopener" target="_blank">MGM kaynağını aç ↗</a></div>
+<div class="forecast-foot"><span><i class="info-dot">i</i> <span id="forecast-foot-note">Apify doğrulamasında bugünden sonraki beş gün için sağanak/gök gürültülü sağanak sinyali bulundu.</span></span><a href="https://www.mgm.gov.tr/?il=Istanbul" rel="noopener" target="_blank">MGM kaynağını aç ↗</a></div>
 </section><section class="logic-section">
 <div class="section-shell logic-layout">
 <div class="logic-copy">
@@ -90,7 +91,7 @@
 </div>
 <div class="logic-connector">VE</div>
 <div class="logic-rule">
-<span class="rule-index">B</span><div><small>YAĞIŞ GÖRÜNÜMÜ</small><strong><span class="check-warn" id="rain-check">↗</span> Yağış sinyali var</strong><p>13–17 Ekim MGM’de sağanak/gök gürültülü sağanak</p></div>
+<span class="rule-index">B</span><div><small>YAĞIŞ GÖRÜNÜMÜ</small><strong><span class="check-warn" id="rain-check">↗</span> <span id="rain-expression">Yağış sinyali var</span></strong><p id="rain-detail">13–17 Ekim MGM’de sağanak/gök gürültülü sağanak</p></div>
 </div>
 <div class="logic-outcome calm" id="logic-outcome"><span>BUGÜNÜN ÇIKTISI</span><b>DİKKATLİ KAL</b><small>Kritik mod kapalı</small></div>
 </div>
