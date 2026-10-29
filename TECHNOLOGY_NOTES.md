@@ -10,11 +10,9 @@
 - **How it affects the product:** the returned signal supports the calm “Dikkatli Kal” state and the conservative seven-day rule; the site does not invent days six and seven.
 - **Evidence in the prototype:** `/data/apify-mgm-verification.json`, linked from the footer under `VERIFICATION PIPELINE`.
 
-### Apify Proxy (live data fallback)
+### Live reservoir data (not Apify)
 
-- **Where:** `scripts/update-live-data.mjs`, run hourly by `.github/workflows/update-live-data.yml`.
-- **How:** İBB open data (İSKİ reservoirs) and MGM's daily forecast service are requested directly first. If a source refuses the GitHub runner, the same requests are repeated through Apify Proxy (default `groups-RESIDENTIAL,country-TR`) when the `APIFY_PROXY_PASSWORD` secret is set.
-- **Evidence:** each block in `public/data/live.json` records `via: "direct"` or `via: "apify-proxy"`. Only claim Apify was used for live data once a committed `live.json` shows `apify-proxy`.
+İSKİ and İBB open data only accept Turkish IPs; requests from GitHub runners, Apify Web Scraper and Apify Proxy (free plan: 403) all failed. The hourly job therefore reads İSKİ's published figures from dolulukorani.com, which republishes them; see README. Apify is used only for the 12 October MGM verification above.
 
 ### fal.ai
 
