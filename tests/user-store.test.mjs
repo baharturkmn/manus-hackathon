@@ -58,6 +58,8 @@ test('removing a field clears it in the backend', async () => {
 test('unknown fields and wrong shapes are dropped', () => {
   assert.deepEqual(sanitizeUserData({ tasks: 'brush', billHistory: [{ total: 1 }], admin: true, verifiedSavings: [] }), { billHistory: [{ total: 1 }] });
   assert.deepEqual(sanitizeUserData(null), {});
+  assert.deepEqual(sanitizeUserData({ tasks: { '2026-10-30': ['brush'] } }), { tasks: { '2026-10-30': ['brush'] } });
+  assert.deepEqual(sanitizeUserData({ tasks: { dün: ['brush'] } }), {});
   assert.throws(() => createUserStore(memoryBackend()).set('admin', true));
 });
 
@@ -66,6 +68,8 @@ test('guest data detection for the first-sign-in move', () => {
   assert.equal(hasUserData({ tasks: [] }), false);
   assert.equal(hasUserData({ tasks: ['brush'] }), true);
   assert.equal(hasUserData({ verifiedSavings: { eligible: false } }), true);
+  assert.equal(hasUserData({ tasks: {} }), false);
+  assert.equal(hasUserData({ tasks: { '2026-10-30': ['brush'] } }), true);
 });
 
 test('blocked browser storage does not break the guest store', async () => {

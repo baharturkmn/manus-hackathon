@@ -1,6 +1,8 @@
 // Per-user data for tasks, bills and savings. Signed-out visitors ("misafir")
 // keep using this browser's localStorage; a signed-in user's data lives in their
 // own Firestore document (see account.mjs). app.js only talks to the store.
+import { isTaskLog } from './task-log.mjs';
+
 export const GUEST_STORAGE_KEYS = Object.freeze({
   tasks: 'sunobeti-tasks-v3',
   billHistory: 'sunobeti-bill-history-v1',
@@ -11,7 +13,8 @@ export const USER_DATA_FIELDS = Object.freeze(Object.keys(GUEST_STORAGE_KEYS));
 
 const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const VALIDATORS = {
-  tasks: value => Array.isArray(value) && value.every(id => typeof id === 'string'),
+  // Daily log { 'YYYY-MM-DD': ids } or, in older records, a bare array of ids.
+  tasks: isTaskLog,
   billHistory: value => Array.isArray(value) && value.every(isRecord),
   verifiedSavings: isRecord,
   verifiedHistory: value => Array.isArray(value) && value.every(isRecord)
@@ -31,6 +34,7 @@ export function sanitizeUserData(raw) {
 export function hasUserData(data) {
   return USER_DATA_FIELDS.some(field => {
     const value = data?.[field];
+    if (field === 'tasks' && isRecord(value)) return Object.keys(value).length > 0;
     return Array.isArray(value) ? value.length > 0 : isRecord(value);
   });
 }
