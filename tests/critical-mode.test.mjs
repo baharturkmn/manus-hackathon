@@ -6,7 +6,10 @@ import {
 } from '../critical-mode.mjs';
 import { buildLiveFile, readLiveFile, parseDolulukPage } from '../live-data.mjs';
 
-const history = JSON.parse(readFileSync(new URL('../public/data/history.json', import.meta.url), 'utf8'));
+// A frozen copy of public/data/history.json as of 30 October 2026. The live
+// file grows every hour, so tests must not depend on its current contents.
+const history = JSON.parse(readFileSync(new URL('./fixtures/history-2026-10-30.json', import.meta.url), 'utf8'));
+const liveHistory = JSON.parse(readFileSync(new URL('../public/data/history.json', import.meta.url), 'utf8'));
 
 // A synthetic daily history: `years` full years at a constant level, then `tail` values.
 function synthetic({ startYear = 2010, years = 6, level = 60, tail = [] } = {}) {
@@ -108,6 +111,14 @@ test('critical mode travels through live.json and survives a failed run', () => 
   const second = buildLiveFile({ reservoir: null, weather: null, previous: first });
   assert.deepEqual(second.criticalMode, first.criticalMode);
   assert.equal(readLiveFile({ version: 1, criticalMode: { level: 'panik', measuredOn: '2026-10-30' } }).criticalMode, null);
+});
+
+test('the live history file is well formed', () => {
+  assert.equal(liveHistory.start, history.start);
+  assert.ok(liveHistory.values.length >= history.values.length);
+  // The calibrated past never changes as new readings are appended.
+  assert.deepEqual(liveHistory.values.slice(0, 8520), history.values.slice(0, 8520));
+  assert.ok(liveHistory.values.every(v => v === null || (typeof v === 'number' && v >= 0 && v <= 100)));
 });
 
 test('the reservoir page yields every dated reading for the history', () => {
