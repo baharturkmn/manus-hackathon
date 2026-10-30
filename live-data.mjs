@@ -89,6 +89,8 @@ export function parseDolulukPage(html, trendLength = 5) {
   const lowest = dams.length ? dams.reduce((low, dam) => (dam.occupancy < low.occupancy ? dam : low)) : null;
   return {
     latest: { date: latest.date, occupancy: latest.value },
+    // Every dated row on the page, for public/data/history.json.
+    readings: series.map(point => ({ date: point.date.toISOString().slice(0, 10), value: point.value })),
     trend: series.slice(-trendLength).map(point => ({ date: shortDateLabel(point.date), value: point.value, isoDate: point.date })),
     criticalDam: lowest ? { ...lowest, date: latest.date } : null
   };
@@ -194,7 +196,7 @@ function isoDay(date) {
 
 // Shapes freshly loaded data for public/data/live.json. A source that failed
 // this run keeps its previous good block, so one outage does not blank the page.
-export function buildLiveFile({ reservoir, weather, previous = null, now = new Date() }) {
+export function buildLiveFile({ reservoir, weather, criticalMode = null, previous = null, now = new Date() }) {
   return {
     version: 1,
     reservoir: reservoir ? {
@@ -209,7 +211,9 @@ export function buildLiveFile({ reservoir, weather, previous = null, now = new D
       source: weather.source,
       fetchedAt: now.toISOString(),
       days: weather.forecast.map(day => ({ date: isoDay(day.isoDate), event: day.event, code: day.code, rainSignal: day.rainSignal, low: day.low, high: day.high }))
-    } : previous?.forecast ?? null
+    } : previous?.forecast ?? null,
+    // Computed from history.json on every run (critical-mode.mjs).
+    criticalMode: criticalMode ?? previous?.criticalMode ?? null
   };
 }
 
@@ -227,7 +231,7 @@ const RESERVOIR_STALE_DAYS = 3;
 // already past are dropped, and a forecast older than 36 h is ignored entirely
 // rather than feeding an outdated rain signal into the critical-mode rule.
 export function readLiveFile(file, now = new Date()) {
-  if (!file || file.version !== 1) return { reservoir: null, weather: null };
+  if (!file || file.version !== 1) return { reservoir: null, weather: null, criticalMode: null };
   const today = istanbulToday(now);
   let reservoir = null;
   const r = file.reservoir;
@@ -257,5 +261,7 @@ export function readLiveFile(file, now = new Date()) {
       .map(day => ({ ...day, date: shortDateLabel(day.isoDate), name: TR_DAYS[day.isoDate.getUTCDay()] }));
     if (forecast.length) weather = { source: f.source, fetchedAt, forecast };
   }
-  return { reservoir, weather };
+  const m = file.criticalMode;
+  const criticalMode = m && ['normal', 'dikkat', 'kritik', 'acil'].includes(m.level) && parseDate(m.measuredOn) ? m : null;
+  return { reservoir, weather, criticalMode };
 }
