@@ -253,12 +253,20 @@ function currentTaskList() {
   return tasksForToday({ day: taskDay, answers: currentHousehold().answers, level: liveSnapshot.criticalMode?.level || 'normal' });
 }
 
-function renderTaskHistory(total) {
+// A day counts as complete when all of that day's required tasks were ticked.
+// Past days are judged against their own list (household answers, rotating
+// task, Normal level), not today's, so older logs are not marked by today's size.
+function dayComplete(day, ids) {
+  const level = day === taskDay ? liveSnapshot.criticalMode?.level || 'normal' : 'normal';
+  return dayProgress(tasksForToday({ day, answers: currentHousehold().answers, level }), ids).complete;
+}
+
+function renderTaskHistory() {
   const log = normalizeTaskLog(userStore.get('tasks', {}), taskDay);
   const streak = currentStreak(log, taskDay);
   document.getElementById('task-streak').textContent = streak ? `${streak} gün üst üste` : 'Bugün ilk adımı at';
   document.getElementById('task-history-days').innerHTML = recentDays(log, taskDay).map(({ day, done, label, weekday }) => `
-    <li class="${day === taskDay ? 'today' : ''} ${done >= total ? 'complete' : done ? 'partial' : ''}" title="${label}: ${done} görev">
+    <li class="${day === taskDay ? 'today' : ''} ${done && dayComplete(day, tasksForDay(log, day)) ? 'complete' : done ? 'partial' : ''}" title="${label}: ${done} görev">
       <span>${weekday}</span><b>${done}</b><small>${label}</small>
     </li>`).join('');
 }
@@ -306,6 +314,9 @@ function renderTasks() {
   renderHouseholdForm();
   renderOneTimeCard();
   updateTaskScore({ persist: false });
+  // Freshly drawn inputs must stay locked while an account is still loading
+  // (live data can trigger this render mid-load).
+  if (document.body.hasAttribute('data-user-loading')) setUserDataLoading(true);
 }
 
 function wireTasks() {
@@ -337,7 +348,7 @@ function updateTaskScore({ persist = true } = {}) {
   const keptHidden = todaysTasks().filter(id => !shown.has(id));
   if (persist) userStore.set('tasks', withDayTasks(userStore.get('tasks', {}), taskDay, [...keptHidden, ...selected]));
   const progress = dayProgress(tasks, selected);
-  renderTaskHistory(progress.required);
+  renderTaskHistory();
   document.getElementById('task-count').textContent = progress.doneRequired;
   document.getElementById('task-total').textContent = progress.required;
   document.getElementById('points-value').textContent = progress.points;
