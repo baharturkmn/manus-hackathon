@@ -34,6 +34,19 @@ Canlı şehir verisi sunucu tarafında toplanır: `.github/workflows/update-live
 
 İş akışı GitHub'ın zamanlanmış çalıştırma kuralı gereği yalnızca varsayılan dalda (main) çalışır; Actions sekmesinden "Run workflow" ile elle de tetiklenebilir. Güncellenen dosyanın yayına çıkması için sitenin depodaki her commit'te yeniden yayımlanması gerekir.
 
+## Günlük görevler
+
+Görev listesi `task-catalog.mjs`'den gelir ve her kullanıcıya göre değişir:
+
+- **Evini tanıt:** İlk girişte 7 soru (duş, çift tuşlu sifon, bulaşık/çamaşır makinesi, bitki/bahçe, balkon, araba). Yalnızca evde karşılığı olan görevler gösterilir; cevaplar kullanıcı kaydının `household` alanında tutulur.
+- **Günlük:** Diş fırçalama, duş, sifon, bulaşık; çamaşır isteğe bağlıdır ve tamamlanma sayısına girmez.
+- **Günün görevi:** Basit görevlerden her gün biri, tarihe göre dönüşümlü.
+- **Seviyeye özel:** Şehir Dikkat'teyken araba ve balkon görevleri, Kritik'teyken bunlara ek olarak sabunlanırken suyu kapatma, biriktirilmiş suyla sulama ve su bidonu hazırlama eklenir.
+- **Mevsimlik:** Bitki sulama saati, Mayıs–Eylül.
+- **Evini bir kere hazırla:** Sifon kaçak testi, perlatör, duş başlığı, damlayan musluk. Bir kez işaretlenir, tarihiyle saklanır.
+
+`firestore.rules` bu yüzden `household` alanına izin verir; kural değişikliği Firebase'e yüklenmeden hesaplı kullanıcıların kayıtları reddedilir.
+
 ## Kritik mod
 
 Seviye (Normal, Dikkat, Kritik, Acil) her saatlik çalıştırmada `critical-mode.mjs` ile `public/data/history.json`'daki günlük doluluk geçmişinden hesaplanır ve `live.json`'daki `criticalMode` bloğuna yazılır; site yalnızca bu bloğu gösterir.

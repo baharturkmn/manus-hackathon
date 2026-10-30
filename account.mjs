@@ -130,7 +130,7 @@ export async function initializeAccount({ store, storage, onDataChanged, onSwitc
     if (user) {
       $('account-display-name').textContent = displayName();
       $('account-email').textContent = user.email || '';
-      $('account-task-count').textContent = `${$('task-count').textContent}/8 görev`;
+      $('account-task-count').textContent = `${$('task-count').textContent}/${$('task-total')?.textContent || '?'} görev`;
       $('account-bill-count').textContent = $('bill-history-count').textContent;
     }
   }
