@@ -1,0 +1,14 @@
+rules_version = '2';
+
+// Each signed-in user may read and write only their own document users/{uid}.
+// Nobody can list other users or read another user's bills.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['tasks', 'billHistory', 'verifiedSavings', 'verifiedHistory', 'updatedAt'])
+        && request.resource.size() < 64 * 1024;
+    }
+  }
+}

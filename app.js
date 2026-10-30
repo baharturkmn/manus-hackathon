@@ -2,7 +2,8 @@ import { sortedBillHistory, resolveBillPair, calculateBillChange, validBill, val
 import { couponCopyMarkup, copyCouponCode } from './coupon-copy.mjs';
 import { getPartnerOffer, BRAND_DISCOUNTS } from './partner-offers.mjs';
 import { initializeWorkspaceTabs } from './workspace-tabs.mjs';
-import { initializeDemoProfile } from './demo-profile.mjs';
+import { initializeAccount } from './account.mjs';
+import { createLocalBackend, createUserStore } from './user-store.mjs';
 import { milestoneReached, recommendHabitPartner } from './habit-rewards.mjs';
 import { readLiveFile, numericDateLabel } from './live-data.mjs';
 
@@ -46,11 +47,11 @@ const liveSnapshot = {
   ]
 };
 
-const taskStorageKey = 'sunobeti-tasks-v3';
 const communityStorageKey = 'sunobeti-community-savings-v1';
-const verifiedSavingsStorageKey = 'sunobeti-verified-savings-v1';
-const verifiedHistoryStorageKey = 'sunobeti-verified-history-v1';
-const billHistoryStorageKey = 'sunobeti-bill-history-v1';
+// Tasks, bills and savings belong to the current user: a guest's live in this
+// browser, a signed-in user's in their account (account.mjs).
+const browserStorage = (() => { try { return window.localStorage; } catch { return { getItem: () => null, setItem() {}, removeItem() {} }; } })();
+const userStore = createUserStore(createLocalBackend(browserStorage));
 const communityBaselineLiters = 12480;
 const billState = { previous: {}, current: {} };
 // Which parts of liveSnapshot came from a live request on this visit.
@@ -233,24 +234,24 @@ function animateCommunityCounter(nextValue) {
 function updateCommunityCounter(tasks, selected) {
   const taskLiters = tasks.filter(task => selected.includes(task.id)).reduce((sum, task) => sum + task.liters, 0);
   const total = communityBaselineLiters + taskLiters;
-  localStorage.setItem(communityStorageKey, String(total));
+  try { browserStorage.setItem(communityStorageKey, String(total)); } catch { /* storage blocked */ }
   animateCommunityCounter(total);
   const contribution = document.getElementById('community-contribution');
   if (contribution) contribution.textContent = selected.length ? `Bu ziyarette seçtiğin görevler: +${formatLiters(taskLiters)} L` : 'Bu ziyaretteki seçimlerinle artar.';
 }
 
 function renderTasks(tasks) {
-  const saved = JSON.parse(localStorage.getItem(taskStorageKey) || '[]');
+  const saved = userStore.get('tasks', []);
   const container = document.getElementById('task-list');
   container.innerHTML = tasks.map(task => `
     <label class="task"><input type="checkbox" data-id="${task.id}" ${saved.includes(task.id) ? 'checked' : ''}><span class="task-check">✓</span><span class="task-visual">${taskIcon(task.icon)}</span><span class="task-text">${task.text}</span></label>`).join('');
   container.addEventListener('change', () => updateTaskScore(tasks));
-  updateTaskScore(tasks);
+  updateTaskScore(tasks, { persist: false });
 }
 
-function updateTaskScore(tasks) {
+function updateTaskScore(tasks, { persist = true } = {}) {
   const selected = [...document.querySelectorAll('.task input:checked')].map(input => input.dataset.id);
-  localStorage.setItem(taskStorageKey, JSON.stringify(selected));
+  if (persist) userStore.set('tasks', selected);
   const points = tasks.filter(task => selected.includes(task.id)).reduce((total, task) => total + task.points, 0);
   document.getElementById('task-count').textContent = selected.length;
   document.getElementById('points-value').textContent = points;
@@ -366,27 +367,23 @@ function monthKey() {
   return '2026-10';
 }
 
-function loadStoredJson(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); } catch { return fallback; }
-}
-
 function formatPercent(value) {
   return `${Number(value).toFixed(1).replace('.', ',')}%`;
 }
 
 function saveVerifiedSavings(result) {
-  localStorage.setItem(verifiedSavingsStorageKey, JSON.stringify(result));
+  userStore.set('verifiedSavings', result);
   if (!result.eligible) return;
-  const history = loadStoredJson(verifiedHistoryStorageKey, []);
+  const history = userStore.get('verifiedHistory', []);
   const exists = history.some(item => item.fingerprint === result.fingerprint && item.month === result.month);
   if (!exists) {
     history.push({ fingerprint: result.fingerprint, reduction: result.reduction, month: result.month });
-    localStorage.setItem(verifiedHistoryStorageKey, JSON.stringify(history));
+    userStore.set('verifiedHistory', history);
   }
 }
 
 function renderPartnerRewards() {
-  const history = loadStoredJson(verifiedHistoryStorageKey, []).filter(item => item.month === monthKey());
+  const history = userStore.get('verifiedHistory', []).filter(item => item.month === monthKey());
   const users = document.getElementById('verified-users');
   const average = document.getElementById('verified-average');
   const summary = document.getElementById('verified-summary');
@@ -399,7 +396,7 @@ function renderPartnerRewards() {
 }
 
 function loadBillHistory() {
-  return sortedBillHistory(loadStoredJson(billHistoryStorageKey, []));
+  return sortedBillHistory(userStore.get('billHistory', []));
 }
 
 function renderBillHistory() {
@@ -420,7 +417,7 @@ function saveBillToHistory(fields) {
   const record = { total: Number(fields.total), days: Number(fields.days), period: fields.period || '', savedAt: new Date().toISOString() };
   const duplicate = history.some(item => item.total === record.total && item.days === record.days && item.period === record.period);
   const next = duplicate ? history : [record, ...history].slice(0, 6);
-  localStorage.setItem(billHistoryStorageKey, JSON.stringify(next));
+  userStore.set('billHistory', next);
   renderBillHistory();
 }
 
@@ -453,7 +450,7 @@ function renderBillComparison() {
     feedback.hidden = true;
     error.hidden = false;
     error.textContent = pair.error;
-    localStorage.removeItem(verifiedSavingsStorageKey);
+    userStore.remove('verifiedSavings');
     renderPartnerRewards();
     return false;
   }
@@ -641,7 +638,7 @@ function wireCopyButtons() {
 }
 
 function renderPersonalCoupon() {
-  const reward = loadStoredJson(verifiedSavingsStorageKey, null);
+  const reward = userStore.get('verifiedSavings', null);
   const select = document.getElementById('reward-brand');
   const content = document.getElementById('personal-coupon-content');
   if (!select || !content) return;
@@ -666,8 +663,8 @@ function wirePersonalReward() {
     button.setAttribute('aria-expanded', String(open));
     button.textContent = open ? 'ÖDÜLÜMÜ GİZLE' : 'ÖDÜLÜMÜ GÖR';
     if (open) {
-      const reward = loadStoredJson(verifiedSavingsStorageKey, null);
-      const recommendation = recommendHabitPartner(loadStoredJson(taskStorageKey, []), reward?.fingerprint || '');
+      const reward = userStore.get('verifiedSavings', null);
+      const recommendation = recommendHabitPartner(userStore.get('tasks', []), reward?.fingerprint || '');
       document.getElementById('reward-brand').value = recommendation.codePrefix;
       const note = document.getElementById('reward-category-note');
       note.textContent = recommendation.hasHabitSignal
@@ -801,8 +798,21 @@ async function refreshLiveData() {
   renderDataStatus();
 }
 
-function initialize() {
-  const savedCommunityTotal = Number(localStorage.getItem(communityStorageKey) || communityBaselineLiters);
+// Re-renders everything that belongs to the user after sign-in or sign-out.
+function applyUserData() {
+  const saved = userStore.get('tasks', []);
+  document.querySelectorAll('.task input').forEach(input => { input.checked = saved.includes(input.dataset.id); });
+  updateTaskScore(liveSnapshot.tasks, { persist: false });
+  renderBillHistory();
+  document.getElementById('bill-comparison-feedback').hidden = true;
+  document.getElementById('bill-comparison-error').hidden = true;
+  if (loadBillHistory().length >= 2) renderBillComparison();
+  renderPartnerRewards();
+}
+
+async function initialize() {
+  await userStore.use(createLocalBackend(browserStorage));
+  const savedCommunityTotal = Number(browserStorage.getItem(communityStorageKey) || communityBaselineLiters);
   const communityValue = document.getElementById('community-liters');
   communityValue.dataset.value = String(savedCommunityTotal);
   communityValue.textContent = formatLiters(savedCommunityTotal);
@@ -818,7 +828,8 @@ function initialize() {
   wireBillUpload();
   if (loadBillHistory().length >= 2) renderBillComparison();
   initializeWorkspaceTabs();
-  initializeDemoProfile();
+  initializeAccount({ store: userStore, storage: browserStorage, onDataChanged: applyUserData })
+    .catch(() => { document.getElementById('account-status').textContent = 'Hesap servisi yüklenemedi; misafir olarak devam ediyorsun.'; });
   refreshLiveData();
 }
 

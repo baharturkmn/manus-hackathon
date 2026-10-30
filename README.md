@@ -21,7 +21,7 @@ npm run preview
 
 ## Özellikler
 
-Sekmeli arayüz; İSKİ baraj doluluk görünümü; MGM yağış sinyali; sekiz günlük alışkanlık; beş görevde özel katılım kuponu; sekiz görevde paylaşım kartı; Türkçe OCR ile tek fatura yükleme ve kayıtlı geçmişle 30 güne normalize edilmiş karşılaştırma; kişisel tasarruf seviyesine ve kurgusal markaya bağlı kopyalanabilir kuponlar; şifresiz demo profil.
+Sekmeli arayüz; İSKİ baraj doluluk görünümü; MGM yağış sinyali; sekiz günlük alışkanlık; beş görevde özel katılım kuponu; sekiz görevde paylaşım kartı; Türkçe OCR ile tek fatura yükleme ve kayıtlı geçmişle 30 güne normalize edilmiş karşılaştırma; kişisel tasarruf seviyesine ve kurgusal markaya bağlı kopyalanabilir kuponlar; kullanıcıya özel hesaplar (e-posta/şifre veya Google).
 
 ## Demo sınırları
 
@@ -45,6 +45,20 @@ Seviye (Normal, Dikkat, Kritik, Acil) her saatlik çalıştırmada `critical-mod
 - Mevsim normali yalnızca önceki yılların aynı günlerinden (±7 gün) hesaplanır. Yağış tahmini seviyeyi belirlemez.
 
 `history.json`, İBB Açık Veri Portalı'ndaki İSKİ günlük doluluk dosyalarından (Ekim 2000 – Şubat 2024) temizlenerek oluşturuldu; saatlik iş her yeni ölçümü ekler. Eşikler bu geçmişte kalibre edildi: doluluğun %25'in altına indiği beş krizin hepsinde Kritik mod 42–302 gün önce açılırdı, en düşük dolulukun %40'ın üstünde kaldığı yıllarda hiç açılmazdı (`tests/critical-mode.test.mjs` bu sonucu kontrol eder). 2024 Şubat – 2026 Ekim arası geçmişte yok; 28 günlük trend koşulu yeterli ölçüm biriktikten sonra devreye girer.
+
+## Kullanıcı hesapları
+
+Her kullanıcının görevleri, fatura geçmişi ve tasarruf kayıtları kendi hesabında tutulur (Firebase Authentication + Cloud Firestore, belge: `users/{uid}`). Giriş: e-posta/şifre veya Google; şifre sıfırlama, çıkış ve "hesabımı ve kayıtlarımı sil" desteklenir. Giriş yapmayan ziyaretçi "misafir" olarak kalır ve kayıtları yalnızca o tarayıcıda durur; misafir ilk kez hesap açtığında bu cihazdaki kayıtları hesabına taşınır. Fatura görseli yalnızca cihazda OCR ile okunur, hesaba sadece Toplam m³, gün sayısı ve dönem kaydedilir.
+
+Kod: `user-store.mjs` (misafir/hesap veri katmanı), `account.mjs` (giriş penceresi ve Firebase), `firebase-config.mjs` (proje ayarları), `firestore.rules` (her kullanıcı yalnızca kendi belgesini okuyup yazabilir; başka alan eklenemez).
+
+**Kurulum (bir kerelik):**
+1. https://console.firebase.google.com → **Proje ekle**.
+2. **Build → Authentication → Get started** → *Sign-in method*: **Email/Password** ve **Google**'ı etkinleştir. *Settings → Authorized domains*: `baharturkmn.github.io` ekle (`localhost` varsayılan olarak vardır).
+3. **Build → Firestore Database → Create database** (konum: `europe-west`) → **Rules** sekmesine `firestore.rules` içeriğini yapıştırıp **Publish**.
+4. **Project settings → Your apps → Web (</>)** ile bir web uygulaması ekle; çıkan `firebaseConfig` değerlerini `firebase-config.mjs` içindeki tırnakların arasına yaz. Bu değerler gizli değildir; erişimi kurallar korur.
+
+`firebase-config.mjs` boşken site misafir modunda çalışır ve Firebase yüklenmez. Yerel geliştirmede Firebase emülatörü için `VITE_FIREBASE_EMULATOR_HOST=127.0.0.1` kullanılabilir.
 
 ## Yayın
 
