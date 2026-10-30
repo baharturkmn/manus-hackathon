@@ -4,6 +4,7 @@ import { getPartnerOffer, BRAND_DISCOUNTS } from './partner-offers.mjs';
 import { initializeWorkspaceTabs } from './workspace-tabs.mjs';
 import { initializeAccount } from './account.mjs';
 import { createLocalBackend, createUserStore } from './user-store.mjs';
+import { istanbulDayKey, normalizeTaskLog, tasksForDay, withDayTasks, recentDays, currentStreak } from './task-log.mjs';
 import { milestoneReached, recommendHabitPartner } from './habit-rewards.mjs';
 import { readLiveFile, numericDateLabel } from './live-data.mjs';
 
@@ -240,8 +241,25 @@ function updateCommunityCounter(tasks, selected) {
   if (contribution) contribution.textContent = selected.length ? `Bu ziyarette seçtiğin görevler: +${formatLiters(taskLiters)} L` : 'Bu ziyaretteki seçimlerinle artar.';
 }
 
+// Today's ticked tasks from the user's daily log; every new day starts empty.
+let taskDay = istanbulDayKey();
+function todaysTasks() {
+  return tasksForDay(normalizeTaskLog(userStore.get('tasks', {}), taskDay), taskDay);
+}
+
+function renderTaskHistory() {
+  const log = normalizeTaskLog(userStore.get('tasks', {}), taskDay);
+  const total = liveSnapshot.tasks.length;
+  const streak = currentStreak(log, taskDay);
+  document.getElementById('task-streak').textContent = streak ? `${streak} gün üst üste` : 'Bugün ilk adımı at';
+  document.getElementById('task-history-days').innerHTML = recentDays(log, taskDay).map(({ day, done, label, weekday }) => `
+    <li class="${day === taskDay ? 'today' : ''} ${done === total ? 'complete' : done ? 'partial' : ''}" title="${label}: ${done}/${total} görev">
+      <span>${weekday}</span><b>${done}/${total}</b><small>${label}</small>
+    </li>`).join('');
+}
+
 function renderTasks(tasks) {
-  const saved = userStore.get('tasks', []);
+  const saved = todaysTasks();
   const container = document.getElementById('task-list');
   container.innerHTML = tasks.map(task => `
     <label class="task"><input type="checkbox" data-id="${task.id}" ${saved.includes(task.id) ? 'checked' : ''}><span class="task-check">✓</span><span class="task-visual">${taskIcon(task.icon)}</span><span class="task-text">${task.text}</span></label>`).join('');
@@ -251,7 +269,8 @@ function renderTasks(tasks) {
 
 function updateTaskScore(tasks, { persist = true } = {}) {
   const selected = [...document.querySelectorAll('.task input:checked')].map(input => input.dataset.id);
-  if (persist) userStore.set('tasks', selected);
+  if (persist) userStore.set('tasks', withDayTasks(userStore.get('tasks', {}), taskDay, selected));
+  renderTaskHistory();
   const points = tasks.filter(task => selected.includes(task.id)).reduce((total, task) => total + task.points, 0);
   document.getElementById('task-count').textContent = selected.length;
   document.getElementById('points-value').textContent = points;
@@ -664,7 +683,7 @@ function wirePersonalReward() {
     button.textContent = open ? 'ÖDÜLÜMÜ GİZLE' : 'ÖDÜLÜMÜ GÖR';
     if (open) {
       const reward = userStore.get('verifiedSavings', null);
-      const recommendation = recommendHabitPartner(userStore.get('tasks', []), reward?.fingerprint || '');
+      const recommendation = recommendHabitPartner(todaysTasks(), reward?.fingerprint || '');
       document.getElementById('reward-brand').value = recommendation.codePrefix;
       const note = document.getElementById('reward-category-note');
       note.textContent = recommendation.hasHabitSignal
@@ -798,9 +817,17 @@ async function refreshLiveData() {
   renderDataStatus();
 }
 
+// While the signed-in user's records load, edits are blocked so the incoming
+// data cannot overwrite them.
+function setUserDataLoading(loading) {
+  document.body.toggleAttribute('data-user-loading', loading);
+  document.querySelectorAll('.task input, #save-current-bill, #demo-previous-bill').forEach(element => { element.disabled = loading; });
+}
+
 // Re-renders everything that belongs to the user after sign-in or sign-out.
 function applyUserData() {
-  const saved = userStore.get('tasks', []);
+  taskDay = istanbulDayKey();
+  const saved = todaysTasks();
   document.querySelectorAll('.task input').forEach(input => { input.checked = saved.includes(input.dataset.id); });
   updateTaskScore(liveSnapshot.tasks, { persist: false });
   renderBillHistory();
@@ -828,7 +855,11 @@ async function initialize() {
   wireBillUpload();
   if (loadBillHistory().length >= 2) renderBillComparison();
   initializeWorkspaceTabs();
-  initializeAccount({ store: userStore, storage: browserStorage, onDataChanged: applyUserData })
+  // A page left open past midnight (Istanbul) switches to the new, empty day.
+  const checkDayChange = () => { if (istanbulDayKey() !== taskDay) applyUserData(); };
+  setInterval(checkDayChange, 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkDayChange(); });
+  initializeAccount({ store: userStore, storage: browserStorage, onDataChanged: applyUserData, onSwitching: setUserDataLoading })
     .catch(() => { document.getElementById('account-status').textContent = 'Hesap servisi yüklenemedi; misafir olarak devam ediyorsun.'; });
   refreshLiveData();
 }

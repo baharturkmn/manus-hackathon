@@ -76,8 +76,10 @@ function createFirestoreBackend({ fs, db, uid, onError }) {
 }
 
 // Wires the account dialog. `store` is the user store from user-store.mjs;
-// `onDataChanged` re-renders tasks and bills after the active user changes.
-export async function initializeAccount({ store, storage, onDataChanged }) {
+// `onDataChanged` re-renders tasks and bills after the active user changes;
+// `onSwitching(true|false)` brackets the load so the page can block edits that
+// the incoming account data would otherwise overwrite.
+export async function initializeAccount({ store, storage, onDataChanged, onSwitching = () => {} }) {
   const $ = id => document.getElementById(id);
   const dialog = $('account-dialog');
   const trigger = $('account-trigger');
@@ -162,6 +164,7 @@ export async function initializeAccount({ store, storage, onDataChanged }) {
   // Switches the store to the signed-in user's document. On a first sign-in,
   // records made as a guest on this device are moved into the new account.
   async function activate(nextUser) {
+    onSwitching(true);
     if (accountBackend) await accountBackend.flush();
     user = nextUser;
     if (!nextUser) {
@@ -178,7 +181,7 @@ export async function initializeAccount({ store, storage, onDataChanged }) {
           guestBackend.clear();
           announce('Bu cihazdaki misafir kayıtların hesabına taşındı.');
         } else if (!accountBackend.existed && !hasUserData(loaded)) {
-          store.set('tasks', []);
+          store.set('tasks', {});
           await accountBackend.flush();
         }
       } catch (failure) {
@@ -186,6 +189,7 @@ export async function initializeAccount({ store, storage, onDataChanged }) {
       }
     }
     onDataChanged();
+    onSwitching(false);
     render();
   }
   auth.onAuthStateChanged(authInstance, nextUser => { activate(nextUser); });
