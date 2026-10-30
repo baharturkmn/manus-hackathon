@@ -21,7 +21,7 @@
 <svg aria-label="Su damlası logosu" class="logo-drop" role="img" viewBox="0 0 38 42"><path class="drop-shell" d="M19 2C16 8 7 14 7 25a12 12 0 0 0 24 0C31 14 22 8 19 2Z"></path><path class="drop-wave" d="M10 25c5-4 10 4 18 0"></path></svg>
 <span>su<span>nöbeti</span></span>
 </a>
-<div class="nav-account"><div class="nav-meta"><span class="live-dot"></span>MUSLUKTA NORMAL · REZERVDE TAKİP</div><button type="button" id="demo-profile-trigger" class="demo-profile-trigger" aria-haspopup="dialog" aria-controls="demo-profile-dialog"><span class="demo-avatar" id="demo-profile-avatar" aria-hidden="true">D</span><span id="demo-profile-trigger-name">Demo giriş</span><small>DEMO</small></button></div>
+<div class="nav-account"><div class="nav-meta"><span class="live-dot"></span>MUSLUKTA NORMAL · REZERVDE TAKİP</div><button type="button" id="account-trigger" class="demo-profile-trigger" aria-haspopup="dialog" aria-controls="account-dialog"><span class="demo-avatar" id="account-avatar" aria-hidden="true">·</span><span id="account-trigger-name">Giriş yap</span><small id="account-trigger-kind">MİSAFİR</small></button></div>
 </nav>
 <div class="hero-grid workspace-hero-grid">
 <div class="hero-copy">
@@ -194,26 +194,36 @@
 <div class="footer-sources"><a href="https://grafikgoster.iski.gov.tr/baraj-doluluk/" rel="noopener" target="_blank">İSKİ baraj doluluk ↗</a><a href="https://www.mgm.gov.tr/?il=Istanbul" rel="noopener" target="_blank">MGM İstanbul tahmini ↗</a></div>
 </footer>
 </main>
-<dialog id="demo-profile-dialog" class="demo-profile-dialog" aria-labelledby="demo-profile-title" aria-describedby="demo-profile-notice">
-  <div class="demo-dialog-top"><span>ÖRNEK KULLANICI</span><button type="button" id="demo-profile-close" aria-label="Pencereyi kapat">×</button></div>
+<dialog id="account-dialog" class="demo-profile-dialog" aria-labelledby="account-title">
+  <div class="demo-dialog-top"><span>HESABIM</span><button type="button" id="account-close" aria-label="Pencereyi kapat">×</button></div>
   <div class="demo-dialog-mark" aria-hidden="true"><svg viewBox="0 0 38 42"><path class="drop-shell" d="M19 2C16 8 7 14 7 25a12 12 0 0 0 24 0C31 14 22 8 19 2Z"/><path class="drop-wave" d="M10 25c5-4 10 4 18 0"/></svg></div>
-  <h2 id="demo-profile-title">Su nöbetine katıl.</h2>
-  <p id="demo-profile-notice" class="demo-profile-notice">Hackathon için şifresiz örnek profil. Gerçek hesap oluşturulmaz ve kimlik doğrulaması yapılmaz; gerçek e-posta veya şifre girmen gerekmez.</p>
-  <form id="demo-profile-form">
-    <label for="demo-profile-name">Görünen adın</label><input id="demo-profile-name" type="text" value="Deniz Yılmaz" placeholder="Deniz Yılmaz" minlength="2" maxlength="40" autocomplete="off" required>
-    <p class="demo-name-help">Hazır örnek kullanıcıyla devam et veya görünen adı değiştir.</p>
-    <p id="demo-profile-error" class="demo-profile-error" hidden role="alert"></p>
-    <button class="demo-profile-primary" type="submit">DEMO PROFİLLE GİRİŞ YAP</button>
-  </form>
-  <div id="demo-profile-signed-in" hidden>
-    <div class="demo-profile-welcome"><span>MERHABA</span><strong id="demo-profile-display-name"></strong><small>İstanbul · demo katılımcı</small></div>
-    <div class="demo-profile-metrics"><div><span>GÜNLÜK KATILIM</span><strong id="demo-profile-task-count">0/8 görev</strong></div><div><span>FATURA GEÇMİŞİ</span><strong id="demo-profile-bill-count">0 kayıt</strong></div></div>
-    <button type="button" id="demo-profile-bills" class="demo-profile-primary">FATURAM VE ÖDÜLÜME GİT</button>
-    <button type="button" id="demo-profile-logout" class="demo-profile-secondary">DEMO PROFİLDEN ÇIK</button>
+  <h2 id="account-title">Su nöbetine katıl.</h2>
+  <div id="account-setup" hidden>
+    <p class="demo-profile-notice">Hesaplar henüz etkin değil. Görevlerin ve faturaların şimdilik yalnızca bu tarayıcıda misafir olarak tutuluyor.</p>
   </div>
-  <p class="demo-profile-local-note">Profil, görevler ve faturalar yalnızca bu tarayıcının yerel demo hafızasında tutulur. Ad değiştirmek ayrı bir hesap açmaz; çıkış geçmişini silmez. Sunucu hesabı veya güvenli oturum değildir.</p>
+  <div id="account-signed-out" hidden>
+    <p class="demo-profile-notice">Hesabınla giriş yaptığında görevlerin, faturaların ve tasarruf kayıtların yalnızca sana ait hesabında saklanır; başka cihazdan girdiğinde de görürsün.</p>
+    <div class="account-modes" role="group" aria-label="Giriş türü"><button type="button" id="account-mode-signin" aria-pressed="true">Giriş yap</button><button type="button" id="account-mode-signup" aria-pressed="false">Hesap oluştur</button></div>
+    <form id="account-form">
+      <div id="account-name-row" hidden><label for="account-name">Adın</label><input id="account-name" type="text" minlength="2" maxlength="40" autocomplete="name"></div>
+      <label for="account-email-input">E-posta</label><input id="account-email-input" type="email" autocomplete="email" required>
+      <label for="account-password">Şifre</label><input id="account-password" type="password" minlength="6" autocomplete="current-password" required>
+      <button class="demo-profile-primary" id="account-submit" type="submit">GİRİŞ YAP</button>
+      <button class="account-link" id="account-reset" type="button">Şifremi unuttum</button>
+    </form>
+    <button type="button" id="account-google" class="demo-profile-secondary">GOOGLE İLE DEVAM ET</button>
+  </div>
+  <p id="account-error" class="demo-profile-error" hidden role="alert"></p>
+  <div id="account-signed-in" hidden>
+    <div class="demo-profile-welcome"><span>MERHABA</span><strong id="account-display-name"></strong><small id="account-email"></small></div>
+    <div class="demo-profile-metrics"><div><span>GÜNLÜK KATILIM</span><strong id="account-task-count">0/8 görev</strong></div><div><span>FATURA GEÇMİŞİ</span><strong id="account-bill-count">0 kayıt</strong></div></div>
+    <button type="button" id="account-bills" class="demo-profile-primary">FATURAM VE ÖDÜLÜME GİT</button>
+    <button type="button" id="account-logout" class="demo-profile-secondary">ÇIKIŞ YAP</button>
+    <button type="button" id="account-delete" class="account-link account-danger">Hesabımı ve kayıtlarımı sil</button>
+  </div>
+  <p class="demo-profile-local-note">Fatura görselin yalnızca cihazında okunur, sunucuya yüklenmez; hesabına sadece Toplam m³, gün sayısı ve dönem kaydedilir. Kayıtlarını yalnızca sen görebilirsin ve dilediğin an silebilirsin.</p>
 </dialog>
-<p id="demo-profile-status" class="demo-profile-toast" role="status" aria-live="polite"></p>
+<p id="account-status" class="demo-profile-toast" role="status" aria-live="polite"></p>
 <script src="app.js" type="module"></script>
 </body>
 </html>

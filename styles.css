@@ -712,9 +712,9 @@ em { color: var(--water); font-style: normal; font-weight: 500; }
 .demo-profile-dialog h2 { font-size: 31px; line-height: 1.1; }
 .demo-profile-notice { color: var(--muted); font-size: 12px; line-height: 1.65; margin: 14px 0 21px; }
 .demo-profile-dialog [hidden] { display: none !important; }
-#demo-profile-form label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 700; }
-#demo-profile-name { width: 100%; min-height: 46px; padding: 11px 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: 14px var(--display); border-radius: 6px; }
-#demo-profile-name:focus { outline: 2px solid var(--water); outline-offset: 2px; }
+#account-form label { display: block; margin: 12px 0 8px; font-size: 12px; font-weight: 700; }
+#account-form input { width: 100%; min-height: 46px; padding: 11px 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: 14px var(--display); border-radius: 6px; }
+#account-form input:focus { outline: 2px solid var(--water); outline-offset: 2px; }
 .demo-name-help { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 9px 0 16px; }
 .demo-profile-primary, .demo-profile-secondary { width: 100%; min-height: 46px; padding: 12px; font: 500 11px/1.4 var(--mono); cursor: pointer; border-radius: 6px; }
 .demo-profile-primary { background: var(--deep-water); color: var(--white); border: 1px solid var(--deep-water); }
@@ -765,3 +765,10 @@ em { color: var(--water); font-style: normal; font-weight: 500; }
 .logic-outcome.critical small { color: #9a4526; }
 body.critical-mode .workspace-nav { border-bottom: 3px solid var(--critical); }
 body.dikkat-mode .workspace-nav { border-bottom: 3px solid #b07816; }
+
+#account-form .demo-profile-primary { margin-top: 18px; }
+.account-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 16px 0 4px; padding: 4px; border: 1px solid var(--line); border-radius: 8px; }
+.account-modes button { min-height: 38px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: 600 13px var(--display); cursor: pointer; }
+.account-modes button[aria-pressed="true"] { background: var(--deep-water); color: var(--white); }
+.account-link { display: block; margin: 12px auto 0; border: 0; background: none; color: var(--water); font: 500 12px var(--display); text-decoration: underline; cursor: pointer; }
+.account-danger { color: #b25738; }
