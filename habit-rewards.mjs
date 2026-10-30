@@ -3,9 +3,10 @@ export function milestoneReached(taskIds) {
 }
 
 const CATEGORIES = [
-  { codePrefix: 'CLEANCYCLE', label: 'Çamaşır alışkanlığı', tasks: ['laundry'] },
-  { codePrefix: 'PUREWAVE', label: 'Duş alışkanlıkları', tasks: ['shower', 'shower-cold'] },
-  { codePrefix: 'SPARKLEWASH', label: 'Bulaşık ve yeniden kullanım', tasks: ['dishwasher', 'greywater'] }
+  // Current task ids (task-catalog.mjs) plus the ids older daily logs still hold.
+  { codePrefix: 'CLEANCYCLE', label: 'Çamaşır alışkanlığı', tasks: ['laundry', 'eco-program'] },
+  { codePrefix: 'PUREWAVE', label: 'Duş alışkanlıkları', tasks: ['shower', 'soap-off', 'shower-cold'] },
+  { codePrefix: 'SPARKLEWASH', label: 'Bulaşık alışkanlıkları', tasks: ['dishes', 'scrape', 'dishwasher', 'greywater'] }
 ];
 
 // Bills verify only the TOTAL reduction. Category matching is a self-reported

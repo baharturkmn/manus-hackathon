@@ -2,12 +2,15 @@
 // keep using this browser's localStorage; a signed-in user's data lives in their
 // own Firestore document (see account.mjs). app.js only talks to the store.
 import { isTaskLog } from './task-log.mjs';
+import { isHousehold } from './task-catalog.mjs';
 
 export const GUEST_STORAGE_KEYS = Object.freeze({
   tasks: 'sunobeti-tasks-v3',
   billHistory: 'sunobeti-bill-history-v1',
   verifiedSavings: 'sunobeti-verified-savings-v1',
-  verifiedHistory: 'sunobeti-verified-history-v1'
+  verifiedHistory: 'sunobeti-verified-history-v1',
+  // Household answers and one-time improvements (task-catalog.mjs).
+  household: 'sunobeti-household-v1'
 });
 export const USER_DATA_FIELDS = Object.freeze(Object.keys(GUEST_STORAGE_KEYS));
 
@@ -17,7 +20,8 @@ const VALIDATORS = {
   tasks: isTaskLog,
   billHistory: value => Array.isArray(value) && value.every(isRecord),
   verifiedSavings: isRecord,
-  verifiedHistory: value => Array.isArray(value) && value.every(isRecord)
+  verifiedHistory: value => Array.isArray(value) && value.every(isRecord),
+  household: isHousehold
 };
 
 // Keeps only known fields with the expected shape, so a corrupted or tampered

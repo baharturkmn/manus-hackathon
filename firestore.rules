@@ -7,7 +7,7 @@ service cloud.firestore {
     match /users/{uid} {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
       allow create, update: if request.auth != null && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['tasks', 'billHistory', 'verifiedSavings', 'verifiedHistory', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['tasks', 'billHistory', 'verifiedSavings', 'verifiedHistory', 'household', 'updatedAt'])
         && request.resource.size() < 64 * 1024;
     }
   }

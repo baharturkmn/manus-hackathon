@@ -5,6 +5,7 @@ import { initializeWorkspaceTabs } from './workspace-tabs.mjs';
 import { initializeAccount } from './account.mjs';
 import { createLocalBackend, createUserStore } from './user-store.mjs';
 import { istanbulDayKey, normalizeTaskLog, tasksForDay, withDayTasks, recentDays, currentStreak } from './task-log.mjs';
+import { HOUSEHOLD_QUESTIONS, normalizeHousehold, tasksForToday, dayProgress, oneTimeTasks, taskById } from './task-catalog.mjs';
 import { milestoneReached, recommendHabitPartner } from './habit-rewards.mjs';
 import { readLiveFile, numericDateLabel } from './live-data.mjs';
 
@@ -29,16 +30,6 @@ const liveSnapshot = {
     { date: '15 Eki', name: 'Perşembe', event: 'Kuvvetli Gök Gürültülü Sağanak', code: 'storm', low: 15, high: 18, rainSignal: true },
     { date: '16 Eki', name: 'Cuma', event: 'Gökgürültülü Sağanak', code: 'storm', low: 13, high: 16, rainSignal: true },
     { date: '17 Eki', name: 'Cumartesi', event: 'Gökgürültülü Sağanak', code: 'storm', low: 13, high: 17, rainSignal: true }
-  ],
-  tasks: [
-    { id: 'brush', icon: 'toothbrush', text: 'Dişlerini fırçalarken musluğu kapat.', points: 20, liters: 8 },
-    { id: 'shower', icon: 'shower', text: 'Duşunu kısa tut.', points: 20, liters: 20 },
-    { id: 'laundry', icon: 'washing-machine', text: 'Çamaşır makinesini yalnızca tam ve gerekli bir yükte çalıştır.', points: 30, liters: 40 },
-    { id: 'dishwasher', icon: 'dishwasher', text: 'Bulaşıkları biriktir; akan suyla elde yıkamak yerine bulaşık makinesinde birlikte yıka.', points: 30, liters: 30 },
-    { id: 'leaks', icon: 'leak', text: 'Muslukları ve rezervuarları kaçak için kontrol et — damlayan bir musluk günde onlarca litre harcayabilir.', points: 35, liters: 40 },
-    { id: 'greywater', icon: 'greywater', text: 'Sebze veya bulaşık yıkama suyunu bitkiler için yeniden kullan.', points: 25, liters: 10 },
-    { id: 'shower-cold', icon: 'cold-water', text: 'Duş ısınana kadar akan soğuk suyu biriktir; bitkilerde veya sifonda kullan.', points: 25, liters: 12 },
-    { id: 'watering', icon: 'watering', text: 'Bitkileri sabah erken ya da akşam geç sula; öğle buharlaşmasını azalt.', points: 20, liters: 15 }
   ],
   partners: [
     { kind: 'DİŞ FIRÇALAMA', brand: 'BrightSmile · Daily', icon: 'toothbrush', product: 'Musluk Kapat Hatırlatıcısı', offer: 'Diş fırçalama rutinine musluğu kapatma anını ekleyen paket veya uygulama eşleşmesi.', codePrefix: 'BRIGHTSMILE' },
@@ -204,7 +195,13 @@ function taskIcon(type) {
     leak: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M11 17h18v8h8"/><path d="M29 17V9h8"/><path d="M37 25c0 5-3 8-7 8s-7-3-7-8c0-3 4-8 7-12 3 4 7 9 7 12Z"/></svg>',
     greywater: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14 9c0 7-5 9-5 16a9 9 0 0 0 18 0c0-7-5-9-5-16"/><path d="M30 29c5-4 9-1 10 3"/><path d="m37 28 3 4-5 1"/></svg>',
     'cold-water': '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 10h17v9h7"/><path d="M29 10V6h6"/><path d="M36 26c0 5-3 8-7 8s-7-3-7-8c0-3 4-8 7-12 3 4 7 9 7 12Z"/><path d="M12 39h25"/></svg>',
-    watering: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 31h28v8H10z"/><path d="M14 31c2-9 7-13 15-13"/><path d="M29 18h7l3 5"/><path d="M18 10v5M25 8v7M32 10v5"/></svg>'
+    watering: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 31h28v8H10z"/><path d="M14 31c2-9 7-13 15-13"/><path d="M29 18h7l3 5"/><path d="M18 10v5M25 8v7M32 10v5"/></svg>',
+    toilet: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="12" y="6" width="18" height="12" rx="2"/><path d="M9 22h28c0 7-5 12-12 12h-4c-7 0-12-5-12-12Z"/><path d="M16 34l-2 8h18l-2-8"/></svg>',
+    tap: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 20h18v-6h10"/><path d="M26 14V9h6"/><path d="M8 26h22v-6"/><path d="M30 30v4M30 38v2"/></svg>',
+    bowl: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M7 24h34c0 9-7 15-17 15S7 33 7 24Z"/><path d="M18 24c0-5 3-9 7-10M28 24c0-4 2-7 6-8"/></svg>',
+    car: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 30v-6l5-9h22l5 9v6Z"/><path d="M8 24h32"/><circle cx="15" cy="32" r="3"/><circle cx="33" cy="32" r="3"/></svg>',
+    bucket: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M11 16h26l-3 24H14Z"/><path d="M11 16c0-6 26-6 26 0"/><path d="M17 24h14"/></svg>',
+    jug: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M16 12h16v6l4 6v16H12V24l4-6Z"/><path d="M19 7h10v5H19z"/><path d="M12 30h24"/></svg>'
   };
   return icons[type] || icons.dishwasher;
 }
@@ -232,13 +229,13 @@ function animateCommunityCounter(nextValue) {
   requestAnimationFrame(() => valueEl.closest('.community-counter')?.classList.add('counter-pulse'));
 }
 
-function updateCommunityCounter(tasks, selected) {
-  const taskLiters = tasks.filter(task => selected.includes(task.id)).reduce((sum, task) => sum + task.liters, 0);
+// Symbolic: only tasks with an agreed rough estimate add litres.
+function updateCommunityCounter(taskLiters, selectedCount) {
   const total = communityBaselineLiters + taskLiters;
   try { browserStorage.setItem(communityStorageKey, String(total)); } catch { /* storage blocked */ }
   animateCommunityCounter(total);
   const contribution = document.getElementById('community-contribution');
-  if (contribution) contribution.textContent = selected.length ? `Bu ziyarette seçtiğin görevler: +${formatLiters(taskLiters)} L` : 'Bu ziyaretteki seçimlerinle artar.';
+  if (contribution) contribution.textContent = selectedCount ? `Bu ziyarette seçtiğin görevler: +${formatLiters(taskLiters)} L` : 'Bu ziyaretteki seçimlerinle artar.';
 }
 
 // Today's ticked tasks from the user's daily log; every new day starts empty.
@@ -247,38 +244,108 @@ function todaysTasks() {
   return tasksForDay(normalizeTaskLog(userStore.get('tasks', {}), taskDay), taskDay);
 }
 
-function renderTaskHistory() {
+function currentHousehold() {
+  return normalizeHousehold(userStore.get('household', null));
+}
+
+// Today's list depends on the household answers, the day and the city level.
+function currentTaskList() {
+  return tasksForToday({ day: taskDay, answers: currentHousehold().answers, level: liveSnapshot.criticalMode?.level || 'normal' });
+}
+
+function renderTaskHistory(total) {
   const log = normalizeTaskLog(userStore.get('tasks', {}), taskDay);
-  const total = liveSnapshot.tasks.length;
   const streak = currentStreak(log, taskDay);
   document.getElementById('task-streak').textContent = streak ? `${streak} gün üst üste` : 'Bugün ilk adımı at';
   document.getElementById('task-history-days').innerHTML = recentDays(log, taskDay).map(({ day, done, label, weekday }) => `
-    <li class="${day === taskDay ? 'today' : ''} ${done === total ? 'complete' : done ? 'partial' : ''}" title="${label}: ${done}/${total} görev">
-      <span>${weekday}</span><b>${done}/${total}</b><small>${label}</small>
+    <li class="${day === taskDay ? 'today' : ''} ${done >= total ? 'complete' : done ? 'partial' : ''}" title="${label}: ${done} görev">
+      <span>${weekday}</span><b>${done}</b><small>${label}</small>
     </li>`).join('');
 }
 
-function renderTasks(tasks) {
-  const saved = todaysTasks();
-  const container = document.getElementById('task-list');
-  container.innerHTML = tasks.map(task => `
-    <label class="task"><input type="checkbox" data-id="${task.id}" ${saved.includes(task.id) ? 'checked' : ''}><span class="task-check">✓</span><span class="task-visual">${taskIcon(task.icon)}</span><span class="task-text">${task.text}</span></label>`).join('');
-  container.addEventListener('change', () => updateTaskScore(tasks));
-  updateTaskScore(tasks, { persist: false });
+function renderHouseholdForm() {
+  const household = currentHousehold();
+  document.getElementById('household-options').innerHTML = HOUSEHOLD_QUESTIONS.map(q => `
+    <label class="household-option"><input type="checkbox" name="${q.id}" ${household.answers[q.id] ? 'checked' : ''}><span>${q.text}</span></label>`).join('');
+  const yes = HOUSEHOLD_QUESTIONS.filter(q => household.answers[q.id]).map(q => q.short);
+  document.getElementById('household-summary').textContent = household.setupDone
+    ? `Evin: ${yes.length ? yes.join(', ') : 'temel görevler'} · değiştirmek için aç`
+    : 'Sana uyan görevleri göstermek için birkaç soru';
+  document.getElementById('household-card').open = !household.setupDone;
 }
 
-function updateTaskScore(tasks, { persist = true } = {}) {
-  const selected = [...document.querySelectorAll('.task input:checked')].map(input => input.dataset.id);
-  if (persist) userStore.set('tasks', withDayTasks(userStore.get('tasks', {}), taskDay, selected));
-  renderTaskHistory();
-  const points = tasks.filter(task => selected.includes(task.id)).reduce((total, task) => total + task.points, 0);
-  document.getElementById('task-count').textContent = selected.length;
-  document.getElementById('points-value').textContent = points;
-  const complete = selected.length === tasks.length;
-  document.getElementById('badge-title').textContent = complete ? 'Bugünün Su Nöbetçisi' : 'Su Nöbetine Katıl';
-  document.getElementById('badge-copy').textContent = complete ? 'Rozet açıldı · paylaşım kartı hazır · topluluk katkın kaydedildi.' : `${tasks.length - selected.length} görev daha · 8/8 olunca rozet ve paylaşım kartı açılır.`;
-  updateCommunityCounter(tasks, selected);
-  updateBadgeCard(tasks, selected);
+function renderOneTimeCard() {
+  const household = currentHousehold();
+  const tasks = oneTimeTasks(household.answers);
+  const done = tasks.filter(task => household.oneTime[task.id]).length;
+  document.getElementById('onetime-progress').textContent = `${done}/${tasks.length}`;
+  document.getElementById('onetime-bar-fill').style.width = tasks.length ? `${done / tasks.length * 100}%` : '0%';
+  document.getElementById('onetime-list').innerHTML = tasks.map(task => {
+    const day = household.oneTime[task.id];
+    return `<label class="task onetime-item ${day ? 'done' : ''}"><input type="checkbox" data-onetime="${task.id}" ${day ? 'checked' : ''}><span class="task-check">✓</span><span class="task-visual">${taskIcon(task.icon)}</span><span class="task-text">${task.text}${day ? `<small>Yapıldı · ${day.split('-').reverse().join('.')}</small>` : ''}</span></label>`;
+  }).join('');
+}
+
+function renderTasks() {
+  const tasks = currentTaskList();
+  const saved = todaysTasks();
+  const level = liveSnapshot.criticalMode?.level || 'normal';
+  const extra = tasks.filter(task => task.levelTag).length;
+  const note = document.getElementById('task-level-note');
+  note.hidden = level === 'normal' || !extra;
+  note.className = `task-level-note ${level === 'dikkat' ? 'dikkat' : 'kritik'}`;
+  note.textContent = level === 'dikkat'
+    ? `Barajlar Dikkat seviyesinde: bugün listende ${extra} ek görev var.`
+    : `Kritik mod: barajlar kritik seviyede, bugün listende ${extra} ek görev var.`;
+  document.getElementById('task-list').innerHTML = tasks.map(task => {
+    const tag = task.levelTag || task.dayTag || (task.optional ? 'İsteğe bağlı' : '');
+    const tagClass = task.levelTag ? `level ${task.levelTag === 'Dikkat' ? 'dikkat' : 'kritik'}` : task.dayTag ? 'day' : 'optional';
+    return `<label class="task"><input type="checkbox" data-id="${task.id}" ${saved.includes(task.id) ? 'checked' : ''}><span class="task-check">✓</span><span class="task-visual">${taskIcon(task.icon)}</span><span class="task-text">${tag ? `<em class="task-tag ${tagClass}">${tag}</em>` : ''}${task.text}</span></label>`;
+  }).join('');
+  document.getElementById('task-optional-note').hidden = !tasks.some(task => task.optional);
+  renderHouseholdForm();
+  renderOneTimeCard();
+  updateTaskScore({ persist: false });
+}
+
+function wireTasks() {
+  document.getElementById('task-list').addEventListener('change', () => updateTaskScore());
+  document.getElementById('onetime-list').addEventListener('change', event => {
+    const id = event.target.dataset.onetime;
+    if (!id) return;
+    const household = currentHousehold();
+    if (event.target.checked) household.oneTime[id] = taskDay;
+    else delete household.oneTime[id];
+    userStore.set('household', household);
+    renderOneTimeCard();
+  });
+  document.getElementById('household-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const household = currentHousehold();
+    for (const q of HOUSEHOLD_QUESTIONS) household.answers[q.id] = event.target.elements[q.id].checked;
+    household.setupDone = true;
+    userStore.set('household', household);
+    renderTasks();
+  });
+}
+
+function updateTaskScore({ persist = true } = {}) {
+  const tasks = currentTaskList();
+  const shown = new Set(tasks.map(task => task.id));
+  const selected = [...document.querySelectorAll('#task-list .task input:checked')].map(input => input.dataset.id);
+  // Ticks from earlier today on tasks no longer shown (e.g. the level changed) stay in the log.
+  const keptHidden = todaysTasks().filter(id => !shown.has(id));
+  if (persist) userStore.set('tasks', withDayTasks(userStore.get('tasks', {}), taskDay, [...keptHidden, ...selected]));
+  const progress = dayProgress(tasks, selected);
+  renderTaskHistory(progress.required);
+  document.getElementById('task-count').textContent = progress.doneRequired;
+  document.getElementById('task-total').textContent = progress.required;
+  document.getElementById('points-value').textContent = progress.points;
+  const remaining = progress.required - progress.doneRequired;
+  document.getElementById('badge-title').textContent = progress.complete ? 'Bugünün Su Nöbetçisi' : 'Su Nöbetine Katıl';
+  document.getElementById('badge-copy').textContent = progress.complete ? 'Rozet açıldı · paylaşım kartı hazır · topluluk katkın kaydedildi.' : `${remaining} görev daha · günün tüm görevleri tamamlanınca rozet ve paylaşım kartı açılır.`;
+  updateCommunityCounter(progress.liters, selected.length);
+  updateBadgeCard(progress.complete);
   document.getElementById('milestone-reward').hidden = !milestoneReached(selected);
   const milestoneCoupon = document.getElementById('milestone-coupon');
   if (milestoneReached(selected) && !milestoneCoupon.hasChildNodes()) {
@@ -304,10 +371,9 @@ function drawBadgeCard() {
   ctx.fillStyle = '#54717a'; ctx.font = '400 24px "DM Mono", monospace'; ctx.fillText(`İSKİ · ${dataState.measuredLabel} · SU NÖBETİ`, 104, 965);
 }
 
-function updateBadgeCard(tasks, selected) {
+function updateBadgeCard(complete) {
   const panel = document.getElementById('badge-panel');
   if (!panel) return;
-  const complete = selected.length === tasks.length;
   panel.hidden = !complete;
   if (complete) drawBadgeCard();
 }
@@ -358,13 +424,12 @@ function formatM3(value) {
 }
 
 function billTips(category) {
-  const labels = Object.fromEntries(liveSnapshot.tasks.map(task => [task.id, task.text]));
   const priorities = category === 'above'
-    ? ['shower', 'leaks', 'laundry']
+    ? ['shower', 'leak-test', 'laundry']
     : category === 'below'
-      ? ['leaks', 'greywater', 'watering']
-      : ['dishwasher', 'shower-cold', 'brush'];
-  return priorities.map(id => labels[id]).filter(Boolean);
+      ? ['hands', 'veg-bowl', 'aerator']
+      : ['dishes', 'flush', 'brush'];
+  return priorities.map(id => taskById(id)?.text).filter(Boolean);
 }
 
 function billInputId(period, field) {
@@ -778,6 +843,8 @@ async function loadLiveFile() {
 async function refreshLiveData() {
   const { reservoir, weather, criticalMode } = await loadLiveFile();
   if (criticalMode) liveSnapshot.criticalMode = criticalMode;
+  // Dikkat / Kritik add tasks to today's list.
+  if (criticalMode) renderTasks();
   if (reservoir) {
     const measured = numericDateLabel(reservoir.latest.date);
     liveSnapshot.occupancy = reservoir.latest.occupancy;
@@ -821,15 +888,13 @@ async function refreshLiveData() {
 // data cannot overwrite them.
 function setUserDataLoading(loading) {
   document.body.toggleAttribute('data-user-loading', loading);
-  document.querySelectorAll('.task input, #save-current-bill, #demo-previous-bill').forEach(element => { element.disabled = loading; });
+  document.querySelectorAll('.task input, .onetime-item input, #household-form input, #household-form button, #save-current-bill, #demo-previous-bill').forEach(element => { element.disabled = loading; });
 }
 
 // Re-renders everything that belongs to the user after sign-in or sign-out.
 function applyUserData() {
   taskDay = istanbulDayKey();
-  const saved = todaysTasks();
-  document.querySelectorAll('.task input').forEach(input => { input.checked = saved.includes(input.dataset.id); });
-  updateTaskScore(liveSnapshot.tasks, { persist: false });
+  renderTasks();
   renderBillHistory();
   document.getElementById('bill-comparison-feedback').hidden = true;
   document.getElementById('bill-comparison-error').hidden = true;
@@ -844,7 +909,8 @@ async function initialize() {
   communityValue.dataset.value = String(savedCommunityTotal);
   communityValue.textContent = formatLiters(savedCommunityTotal);
   renderCityData();
-  renderTasks(liveSnapshot.tasks);
+  wireTasks();
+  renderTasks();
   renderBillHistory();
   renderPartners(liveSnapshot.partners);
   renderPartnerRewards();
