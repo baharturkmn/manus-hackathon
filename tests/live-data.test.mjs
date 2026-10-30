@@ -126,6 +126,6 @@ test('old forecasts, old measurements and unknown files are handled conservative
   const later = readLiveFile(file, new Date('2026-11-05T10:00:00Z'));
   assert.equal(later.weather, null);
   assert.equal(later.reservoir.stale, true);
-  assert.deepEqual(readLiveFile({ version: 2 }), { reservoir: null, weather: null });
-  assert.deepEqual(readLiveFile(null), { reservoir: null, weather: null });
+  assert.deepEqual(readLiveFile({ version: 2 }), { reservoir: null, weather: null, criticalMode: null });
+  assert.deepEqual(readLiveFile(null), { reservoir: null, weather: null, criticalMode: null });
 });

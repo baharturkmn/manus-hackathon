@@ -4,14 +4,15 @@ import { getPartnerOffer, BRAND_DISCOUNTS } from './partner-offers.mjs';
 import { initializeWorkspaceTabs } from './workspace-tabs.mjs';
 import { initializeDemoProfile } from './demo-profile.mjs';
 import { milestoneReached, recommendHabitPartner } from './habit-rewards.mjs';
-import { readLiveFile, knownFutureDays, istanbulToday, numericDateLabel } from './live-data.mjs';
+import { readLiveFile, numericDateLabel } from './live-data.mjs';
 
 const liveSnapshot = {
   verifiedAt: '12 Ekim 2026 · 10:00 TSİ',
   occupancy: 38.11,
   threshold: 35,
   criticalDam: { name: 'Pabuçdere', occupancy: 2.50 },
-  forecastWindowDays: 5,
+  // Level computed hourly from history.json (critical-mode.mjs), read from live.json.
+  criticalMode: null,
   trend: [
     { date: '01 Eki', value: 38.42 },
     { date: '05 Eki', value: 38.93 },
@@ -55,66 +56,114 @@ const billState = { previous: {}, current: {} };
 // Which parts of liveSnapshot came from a live request on this visit.
 const dataState = { reservoirLive: false, reservoirStale: false, forecastLive: false, measuredLabel: '12.10.2026', reservoirFetchedAt: null, forecastFetchedAt: null, reservoirSource: '' };
 
-function decideMode(data) {
-  const rainfallAhead = data.forecast.some(day => day.rainSignal);
-  const sevenDayWindowComplete = data.forecastWindowDays >= 7;
-  const belowThreshold = data.occupancy < data.threshold;
-  const critical = belowThreshold && sevenDayWindowComplete && !rainfallAhead;
-  return { critical, belowThreshold, rainfallAhead, sevenDayWindowComplete, windowDays: data.forecastWindowDays };
+const LEVEL_UI = {
+  normal: { pill: 'calm', icon: '≈', title: 'Dikkatli Kal', outcome: 'NORMAL', note: 'Kritik mod kapalı' },
+  dikkat: { pill: 'dikkat', icon: '!', title: 'Dikkat', outcome: 'DİKKAT', note: 'Tasarrufa şimdiden başla' },
+  kritik: { pill: 'critical', icon: '!', title: 'Kritik Tasarruf Modu Aktif', outcome: 'KRİTİK MOD AKTİF', note: 'Su kullanımını azaltma zamanı' },
+  acil: { pill: 'critical acil', icon: '!', title: 'Acil: İSKİ duyurusu', outcome: 'ACİL', note: 'İSKİ’nin duyurusunu izle' }
+};
+
+function trNumber(value, digits = 1) {
+  return Number(value).toFixed(digits).replace('.', ',');
+}
+
+function signed(value, digits = 1) {
+  return `${value > 0 ? '+' : value < 0 ? '−' : ''}${trNumber(Math.abs(value), digits)}`;
+}
+
+function modeExplanation(mode) {
+  const ind = mode.indicators, rule = mode.rule;
+  const parts = [];
+  if (mode.level === 'acil') parts.push(`İSKİ resmî bir kesinti veya kısıtlama duyurdu${mode.official?.note ? `: ${mode.official.note}` : '.'}`);
+  const reasonText = {
+    floor: `Doluluk %${trNumber(ind.occupancy, 2)} ile %${rule.kritikFloor} tabanının altında.`,
+    pace: `Son ${rule.paceWindow} günün hızıyla %${rule.crisisLevel}’ye yaklaşık ${ind.daysTo20} gün kaldı.`,
+    seasonal: `Doluluk bu tarihin mevsim normalinin ${trNumber(Math.abs(ind.diff))} puan altında.`,
+    below: `Doluluk %${rule.dikkatOcc}’ın altında.`
+  };
+  mode.reasons.forEach(code => { if (reasonText[code]) parts.push(reasonText[code]); });
+  if (mode.held) parts.push('Koşullar düzeliyor, ama seviye ancak doluluk 7 gün boyunca yeterli seviyede kalırsa düşer.');
+  if (mode.computedLevel === 'normal' && mode.level !== 'acil') {
+    parts.push(ind.normal !== null
+      ? `Doluluk %${trNumber(ind.occupancy, 2)}, bu tarihin mevsim normali %${trNumber(ind.normal)}. Dikkat veya Kritik koşullarından hiçbiri sağlanmıyor.`
+      : `Doluluk %${trNumber(ind.occupancy, 2)}. Dikkat veya Kritik koşullarından hiçbiri sağlanmıyor.`);
+  }
+  if (mode.computedLevel !== 'normal' && liveSnapshot.forecast.some(day => day.rainSignal)) {
+    parts.push('MGM önümüzdeki günlerde yağış bekliyor; barajlara etkisi doluluk trendinde görünecek.');
+  }
+  if (mode.stale) parts.push(`Son ölçüm ${mode.measuredOn}; veri 3 günden eski olduğu için seviye güncellenmiyor ve bildirim gönderilmez.`);
+  return parts.join(' ');
 }
 
 function applyMode(mode) {
   const pill = document.getElementById('mode-pill');
+  const icon = document.getElementById('mode-icon');
   const title = document.getElementById('mode-title');
   const description = document.getElementById('mode-description');
   const outcome = document.getElementById('logic-outcome');
   const result = document.getElementById('logic-result');
-  const thresholdCheck = document.getElementById('threshold-check');
-  const thresholdExpression = document.getElementById('threshold-expression');
-  const thresholdResult = document.getElementById('threshold-result');
-  const rainCheck = document.getElementById('rain-check');
-  const reserveMeterFill = document.getElementById('reserve-meter-fill');
-  reserveMeterFill.style.width = `${liveSnapshot.occupancy}%`;
+  const levelCheck = document.getElementById('level-check');
+  const levelExpression = document.getElementById('level-expression');
+  const levelResult = document.getElementById('level-result');
+  const trendCheck = document.getElementById('trend-check');
+  const trendExpression = document.getElementById('trend-expression');
+  const trendDetail = document.getElementById('trend-detail');
+  document.getElementById('reserve-meter-fill').style.width = `${liveSnapshot.occupancy}%`;
 
-  if (mode.critical) {
-    document.body.classList.add('critical-mode');
-    pill.className = 'mode-pill critical';
-    title.textContent = 'Kritik Tasarruf Modu Aktif';
-    description.textContent = 'Eşik altında rezerv, yağış sinyali yok.';
-    outcome.className = 'logic-outcome critical';
-    outcome.innerHTML = '<span>BUGÜNÜN ÇIKTISI</span><b>KRİTİK MOD AKTİF</b><small>Su kullanımını azaltma zamanı</small>';
-    result.textContent = 'Rezerv eşik altında ve yağış görünmüyor; bu nedenle acil tasarruf tonu etkin.';
-    thresholdCheck.textContent = '✓'; thresholdCheck.className = 'check-pass';
-    thresholdExpression.textContent = `${liveSnapshot.occupancy.toFixed(2)}% < ${liveSnapshot.threshold}%`;
-    thresholdResult.textContent = 'Evet · eşik aşılmış durumda';
-    rainCheck.textContent = '✓'; rainCheck.className = 'check-pass';
-  } else {
-    document.body.classList.remove('critical-mode');
-    pill.className = 'mode-pill calm';
+  if (!mode) {
+    const ui = LEVEL_UI.normal;
+    document.body.classList.remove('critical-mode', 'dikkat-mode');
+    pill.className = `mode-pill ${ui.pill}`; icon.textContent = ui.icon;
+    title.textContent = ui.title;
+    description.textContent = 'Seviye için güncel veri bekleniyor.';
     outcome.className = 'logic-outcome calm';
-    outcome.innerHTML = '<span>BUGÜNÜN ÇIKTISI</span><b>DİKKATLİ KAL</b><small>Kritik mod kapalı</small>';
-    title.textContent = 'Dikkatli Kal';
-    const windowNote = !mode.sevenDayWindowComplete ? ` MGM tahmini şu an ${mode.windowDays} ileri gün gösterdiğinden, eksik günler için sistem varsayım yapmaz.` : '';
-    if (mode.belowThreshold) {
-      description.textContent = 'Rezerv eşik altında; yağış koşulu kritik modu açmıyor.';
-      result.textContent = `Rezerv %${liveSnapshot.threshold} eşiğinin altında, ancak ${mode.rainfallAhead ? 'yağış sinyali görüldüğü' : '7 günlük yağış penceresi doğrulanamadığı'} için kritik mod açılmadı; dikkatli kalma mesajı gösteriliyor.${windowNote}`;
-      thresholdCheck.textContent = '✓'; thresholdCheck.className = 'check-pass';
-      thresholdExpression.textContent = `${liveSnapshot.occupancy.toFixed(2)}% < ${liveSnapshot.threshold}%`;
-      thresholdResult.textContent = 'Evet · eşik aşılmış durumda';
-    } else {
-      description.textContent = 'Bugün kritik eşik aşılmadı.';
-      result.textContent = `Bugün kritik eşik aşılmadığı${mode.rainfallAhead ? ' ve yağış sinyali görüldüğü' : ''} için sakin ama dikkatli kalma mesajı gösteriliyor.${windowNote}`;
-      thresholdCheck.textContent = '×'; thresholdCheck.className = 'check-fail';
-      thresholdExpression.textContent = `${liveSnapshot.occupancy.toFixed(2)}% ≥ ${liveSnapshot.threshold}%`;
-      thresholdResult.textContent = 'Hayır · eşik aşılmadı';
-    }
-    rainCheck.textContent = mode.rainfallAhead ? '↗' : '✓'; rainCheck.className = mode.rainfallAhead ? 'check-warn' : 'check-pass';
+    outcome.innerHTML = '<span>BUGÜNÜN ÇIKTISI</span><b>VERİ BEKLENİYOR</b><small>Varsayımla alarm verilmez</small>';
+    result.textContent = 'Kritik mod hesabı için güncel baraj verisi alınamadı. Sistem eksik veriyle alarm vermez.';
+    levelCheck.textContent = '?'; levelCheck.className = 'check-neutral';
+    levelExpression.textContent = `%${trNumber(liveSnapshot.occupancy, 2)}`;
+    levelResult.textContent = 'Mevsim normali hesaplanamadı';
+    trendCheck.textContent = '?'; trendCheck.className = 'check-neutral';
+    trendExpression.textContent = 'Veri yok';
+    trendDetail.textContent = 'Trend için günlük ölçümler gerekiyor';
+    return;
   }
-  const rainDays = liveSnapshot.forecast.filter(day => day.rainSignal);
-  document.getElementById('rain-expression').textContent = mode.rainfallAhead ? 'Yağış sinyali var' : 'Yağış sinyali yok';
-  document.getElementById('rain-detail').textContent = rainDays.length
-    ? `${rainDays[0].date}${rainDays.length > 1 ? `–${rainDays.at(-1).date}` : ''} MGM’de ${rainDays.map(day => day.event.toLocaleLowerCase('tr')).filter((event, i, all) => all.indexOf(event) === i).slice(0, 2).join(' / ')}`
-    : `MGM’nin ${mode.windowDays} günlük görünümünde yağış sinyali yok`;
+
+  const ui = LEVEL_UI[mode.level] || LEVEL_UI.normal;
+  const ind = mode.indicators, rule = mode.rule;
+  document.body.classList.toggle('critical-mode', mode.level === 'kritik' || mode.level === 'acil');
+  document.body.classList.toggle('dikkat-mode', mode.level === 'dikkat');
+  pill.className = `mode-pill ${ui.pill}`; icon.textContent = ui.icon;
+  title.textContent = ui.title;
+  description.textContent = mode.level === 'normal'
+    ? (ind.diff !== null ? `Barajlar mevsim normalinin ${ind.diff >= 0 ? 'üstünde' : 'altında'}.` : 'Kritik koşul yok.')
+    : mode.level === 'dikkat' ? 'Rezerv mevsimine göre düşük seyrediyor.'
+      : mode.level === 'kritik' ? 'Rezerv kritik bölgede.' : 'İSKİ kesinti veya kısıtlama duyurdu.';
+  outcome.className = `logic-outcome ${ui.pill}`;
+  outcome.innerHTML = `<span>BUGÜNÜN ÇIKTISI</span><b>${ui.outcome}</b><small>${ui.note}</small>`;
+  result.textContent = modeExplanation(mode);
+
+  const seasonalHit = ind.diff !== null && ind.diff <= rule.seasonalDiff;
+  const lowHit = ind.occupancy < rule.dikkatOcc;
+  levelCheck.textContent = seasonalHit || lowHit ? '!' : '✓';
+  levelCheck.className = seasonalHit || lowHit ? 'check-pass' : 'check-warn';
+  levelExpression.textContent = ind.normal !== null ? `%${trNumber(ind.occupancy, 2)} · normal %${trNumber(ind.normal)}` : `%${trNumber(ind.occupancy, 2)}`;
+  levelResult.textContent = ind.diff !== null
+    ? `${signed(ind.diff)} puan · mevsim normalinin ${ind.diff >= 0 ? 'üstünde' : 'altında'}`
+    : 'Mevsim normali için yeterli geçmiş yok';
+
+  if (ind.pace28 === null) {
+    trendCheck.textContent = '…'; trendCheck.className = 'check-neutral';
+    trendExpression.textContent = 'Veri birikiyor';
+    trendDetail.textContent = `${rule.paceWindow} günlük trend için ölçüm birikiyor (${ind.readings28}/20)`;
+  } else {
+    const paceHit = ind.daysTo20 !== null && ind.daysTo20 <= rule.kritikDaysTo20;
+    trendCheck.textContent = paceHit ? '!' : ind.pace28 < 0 ? '↘' : '↗';
+    trendCheck.className = paceHit ? 'check-pass' : 'check-warn';
+    trendExpression.textContent = `${signed(ind.pace28, 2)} puan / ${rule.paceWindow} gün`;
+    trendDetail.textContent = ind.daysTo20 !== null
+      ? `Bu hızla %${rule.crisisLevel}’ye yaklaşık ${ind.daysTo20} gün`
+      : 'Doluluk artıyor; kalan gün hesabı gerekmiyor';
+  }
 }
 
 function renderChart(data) {
@@ -674,7 +723,7 @@ function renderCityData() {
   document.getElementById('critical-dam-value').textContent = liveSnapshot.criticalDam.occupancy.toFixed(2);
   const first = liveSnapshot.trend[0].value;
   document.getElementById('trend-change').textContent = `${(liveSnapshot.occupancy - first).toFixed(2).replace('-', '−')} pp`;
-  applyMode(decideMode(liveSnapshot));
+  applyMode(liveSnapshot.criticalMode);
   renderChart(liveSnapshot.trend);
   renderForecast(liveSnapshot.forecast);
   if (!document.getElementById('badge-panel')?.hidden) drawBadgeCard();
@@ -702,16 +751,17 @@ function renderDataStatus() {
 async function loadLiveFile() {
   try {
     const response = await fetch('data/live.json', { cache: 'no-store' });
-    if (!response.ok) return { reservoir: null, weather: null };
+    if (!response.ok) return { reservoir: null, weather: null, criticalMode: null };
     return readLiveFile(await response.json());
   } catch {
-    return { reservoir: null, weather: null };
+    return { reservoir: null, weather: null, criticalMode: null };
   }
 }
 
 // Replaces the dated snapshot only with values a live source actually returned.
 async function refreshLiveData() {
-  const { reservoir, weather } = await loadLiveFile();
+  const { reservoir, weather, criticalMode } = await loadLiveFile();
+  if (criticalMode) liveSnapshot.criticalMode = criticalMode;
   if (reservoir) {
     const measured = numericDateLabel(reservoir.latest.date);
     liveSnapshot.occupancy = reservoir.latest.occupancy;
@@ -739,10 +789,9 @@ async function refreshLiveData() {
   }
   if (weather) {
     liveSnapshot.forecast = weather.forecast;
-    liveSnapshot.forecastWindowDays = knownFutureDays(weather.forecast, istanbulToday());
     dataState.forecastLive = true;
     dataState.forecastFetchedAt = weather.fetchedAt;
-    document.getElementById('forecast-intro').textContent = `Resmî MGM günlük tahmini İstanbul için ${weather.forecast[0].date}–${weather.forecast.at(-1).date} arasını kapsıyor. Kritik mod 7 ileri günü ister; MGM daha kısa bir ufuk verdiğinde eksik günler için varsayım yapılmaz.`;
+    document.getElementById('forecast-intro').textContent = `Resmî MGM günlük tahmini İstanbul için ${weather.forecast[0].date}–${weather.forecast.at(-1).date} arasını kapsıyor. Yağış tahmini kritik mod kararını vermez: barajların toparlanması doluluk trendinde görünür.`;
     const rainCount = weather.forecast.filter(day => day.rainSignal).length;
     document.getElementById('forecast-foot-note').textContent = rainCount
       ? `MGM tahmininde ${rainCount} gün için yağış sinyali var.`

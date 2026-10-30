@@ -34,6 +34,18 @@ Canlı şehir verisi sunucu tarafında toplanır: `.github/workflows/update-live
 
 İş akışı GitHub'ın zamanlanmış çalıştırma kuralı gereği yalnızca varsayılan dalda (main) çalışır; Actions sekmesinden "Run workflow" ile elle de tetiklenebilir. Güncellenen dosyanın yayına çıkması için sitenin depodaki her commit'te yeniden yayımlanması gerekir.
 
+## Kritik mod
+
+Seviye (Normal, Dikkat, Kritik, Acil) her saatlik çalıştırmada `critical-mode.mjs` ile `public/data/history.json`'daki günlük doluluk geçmişinden hesaplanır ve `live.json`'daki `criticalMode` bloğuna yazılır; site yalnızca bu bloğu gösterir.
+
+- **Dikkat:** doluluk %40'ın veya mevsim normalinin 20 puan altında.
+- **Kritik:** doluluk %25'in altında, ya da son 28 günün hızıyla %20'ye 60 günden az kalmış, ya da doluluk %35'in altında ve mevsim normalinin 20 puan altında.
+- Bir koşul art arda 2 gün sağlanınca seviye yükselir; Kritik'ten çıkmak için 7 gün boyunca koşul olmaması ve dolulukun %40'ın (Dikkat için %45'in) üstünde olması gerekir.
+- **Acil:** İSKİ resmî kesinti veya kısıtlama duyurduğunda `public/data/official-status.json` içinde `active: true` yapılır.
+- Mevsim normali yalnızca önceki yılların aynı günlerinden (±7 gün) hesaplanır. Yağış tahmini seviyeyi belirlemez.
+
+`history.json`, İBB Açık Veri Portalı'ndaki İSKİ günlük doluluk dosyalarından (Ekim 2000 – Şubat 2024) temizlenerek oluşturuldu; saatlik iş her yeni ölçümü ekler. Eşikler bu geçmişte kalibre edildi: doluluğun %25'in altına indiği beş krizin hepsinde Kritik mod 42–302 gün önce açılırdı, en düşük dolulukun %40'ın üstünde kaldığı yıllarda hiç açılmazdı (`tests/critical-mode.test.mjs` bu sonucu kontrol eder). 2024 Şubat – 2026 Ekim arası geçmişte yok; 28 günlük trend koşulu yeterli ölçüm biriktikten sonra devreye girer.
+
 ## Yayın
 
 Site GitHub Pages'te yayımlanır: https://baharturkmn.github.io/manus-hackathon/ . `.github/workflows/deploy-pages.yml` her `main` push'unda ve saatlik veri işi bittikten sonra testleri çalıştırır, `vite build --base=/manus-hackathon/` ile derler ve yayımlar. Bir kez **Settings → Pages → Source: GitHub Actions** seçilmelidir. Manus'taki ilk yayın bu depodan beslenmez; güncel veri yalnızca bu yayında görünür.
