@@ -2,7 +2,7 @@
   "version": 1,
   "reservoir": {
     "source": "dolulukorani.com · İSKİ verisi",
-    "fetchedAt": "2026-10-30T16:42:43.667Z",
+    "fetchedAt": "2026-10-30T18:20:17.540Z",
     "measuredOn": "2026-10-30",
     "occupancy": 53.74,
     "trend": [
@@ -35,7 +35,7 @@
   },
   "forecast": {
     "source": "MGM servis.mgm.gov.tr",
-    "fetchedAt": "2026-10-30T16:42:43.667Z",
+    "fetchedAt": "2026-10-30T18:20:17.540Z",
     "days": [
       {
         "date": "2026-10-31",
@@ -78,5 +78,32 @@
         "high": 17
       }
     ]
+  },
+  "criticalMode": {
+    "level": "normal",
+    "computedLevel": "normal",
+    "since": "2026-10-16",
+    "measuredOn": "2026-10-30",
+    "stale": false,
+    "reasons": [],
+    "held": false,
+    "official": null,
+    "indicators": {
+      "occupancy": 53.74,
+      "normal": 47.7,
+      "diff": 6,
+      "pace28": null,
+      "readings28": 15,
+      "daysTo20": null
+    },
+    "rule": {
+      "kritikFloor": 25,
+      "kritikDaysTo20": 60,
+      "kritikSeasonalOcc": 35,
+      "seasonalDiff": -20,
+      "dikkatOcc": 40,
+      "crisisLevel": 20,
+      "paceWindow": 28
+    }
   }
 }
