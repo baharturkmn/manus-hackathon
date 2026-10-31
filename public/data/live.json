@@ -2,14 +2,10 @@
   "version": 1,
   "reservoir": {
     "source": "dolulukorani.com · İSKİ verisi",
-    "fetchedAt": "2026-10-30T18:20:17.540Z",
-    "measuredOn": "2026-10-30",
-    "occupancy": 53.74,
+    "fetchedAt": "2026-10-31T15:22:28.540Z",
+    "measuredOn": "2026-10-31",
+    "occupancy": 53.8,
     "trend": [
-      {
-        "date": "2026-10-26",
-        "value": 52.77
-      },
       {
         "date": "2026-10-27",
         "value": 52.97
@@ -25,31 +21,27 @@
       {
         "date": "2026-10-30",
         "value": 53.74
+      },
+      {
+        "date": "2026-10-31",
+        "value": 53.8
       }
     ],
     "criticalDam": {
       "name": "Papuçdere",
-      "occupancy": 2.8,
-      "measuredOn": "2026-10-30"
+      "occupancy": 2.7,
+      "measuredOn": "2026-10-31"
     }
   },
   "forecast": {
     "source": "MGM servis.mgm.gov.tr",
-    "fetchedAt": "2026-10-30T18:20:17.540Z",
+    "fetchedAt": "2026-10-31T15:22:28.540Z",
     "days": [
       {
-        "date": "2026-10-31",
-        "event": "Çok Bulutlu",
-        "code": "cloud",
-        "rainSignal": false,
-        "low": 12,
-        "high": 17
-      },
-      {
         "date": "2026-11-01",
-        "event": "Çok Bulutlu",
-        "code": "cloud",
-        "rainSignal": false,
+        "event": "Mevzi Sağanak Yağışlı",
+        "code": "rain",
+        "rainSignal": true,
         "low": 13,
         "high": 20
       },
@@ -58,15 +50,15 @@
         "event": "Sağanak Yağışlı",
         "code": "rain",
         "rainSignal": true,
-        "low": 15,
-        "high": 19
+        "low": 14,
+        "high": 20
       },
       {
         "date": "2026-11-03",
         "event": "Sağanak Yağışlı",
         "code": "rain",
         "rainSignal": true,
-        "low": 13,
+        "low": 14,
         "high": 20
       },
       {
@@ -74,8 +66,16 @@
         "event": "Sağanak Yağışlı",
         "code": "rain",
         "rainSignal": true,
-        "low": 15,
+        "low": 14,
         "high": 17
+      },
+      {
+        "date": "2026-11-05",
+        "event": "Sağanak Yağışlı",
+        "code": "rain",
+        "rainSignal": true,
+        "low": 12,
+        "high": 14
       }
     ]
   },
@@ -83,17 +83,17 @@
     "level": "normal",
     "computedLevel": "normal",
     "since": "2026-10-16",
-    "measuredOn": "2026-10-30",
+    "measuredOn": "2026-10-31",
     "stale": false,
     "reasons": [],
     "held": false,
     "official": null,
     "indicators": {
-      "occupancy": 53.74,
+      "occupancy": 53.8,
       "normal": 47.7,
-      "diff": 6,
+      "diff": 6.1,
       "pace28": null,
-      "readings28": 15,
+      "readings28": 16,
       "daysTo20": null
     },
     "rule": {
