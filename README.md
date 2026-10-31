@@ -59,6 +59,22 @@ Seviye (Normal, Dikkat, Kritik, Acil) her saatlik çalıştırmada `critical-mod
 
 `history.json`, İBB Açık Veri Portalı'ndaki İSKİ günlük doluluk dosyalarından (Ekim 2000 – Şubat 2024) temizlenerek oluşturuldu; saatlik iş her yeni ölçümü ekler. Eşikler bu geçmişte kalibre edildi: doluluğun %25'in altına indiği beş krizin hepsinde Kritik mod 42–302 gün önce açılırdı, en düşük dolulukun %40'ın üstünde kaldığı yıllarda hiç açılmazdı (`tests/critical-mode.test.mjs` bu sonucu kontrol eder). 2024 Şubat – 2026 Ekim arası geçmişte yok; 28 günlük trend koşulu yeterli ölçüm biriktikten sonra devreye girer.
 
+## Fatura okuma
+
+Fatura fotoğrafı yalnızca cihazda okunur (Tesseract.js, Türkçe); sunucuya gönderilmez.
+
+1. **Ön işleme** (`bill-image.mjs`): fotoğraf EXIF yönüne göre çevrilir, küçükse büyütülür, renk kanallarının en koyusu alınır (açık mavi/gri etiketler koyulaşır) ve kontrast gerilir.
+2. **İki geçiş**: önce blok düzeninde okunur; tüketim ve gün sayısı kesinleşmezse daha koyu görüntü dağınık metin modunda ikinci kez okunur.
+3. **Ayrıştırma** (`bill-parser.mjs`): fatura düzenine bağlı etiket aramak yerine her alan için birbirinden bağımsız ipuçları toplanır ve oylanır:
+   - **Tüketim (m³):** endeks farkı (ilk/son okuma satırı, "İlk Endeks / Son Endeks", tablo başlığı + değer satırı, yan yana iki benzer sayı), etiketli değer, "m³" birimli sayı, günlük ortalama × gün.
+   - **Gün sayısı:** iki okuma tarihinin farkı (son ödeme ve fatura tarihi ayrılır), etiketli değer, "33 gün" / "GÜN: 30" yazımları.
+   - **Dönem:** 202602, 2026/02, 02/2026, "Şubat 2026", "Ekim/2026", son okuma tarihi.
+   - **Tutar ve son ödeme tarihi:** bilgi amaçlı.
+
+   İki kaynak aynı değeri verirse alan **yüksek güvenli** (yeşil) olur; tek kaynak ya da çelişki varsa alan sarı işaretlenir ve kullanıcıdan kontrol istenir. Okunamayan ya da tutarsız rakamlar (geçersiz tarih, son endeks < ilk endeks) tahmin edilmez, boş bırakılır.
+
+Testler (`tests/bill-parser.test.mjs`) gerçek OCR çıktılarıyla çalışır: örnek İSKİ fotoğrafı, farklı düzenlerde üretilmiş faturalar ve kurallar yazıldıktan sonra körlemesine denenen iki yeni düzen (`tests/fixtures/bills/`).
+
 ## Kullanıcı hesapları
 
 Her kullanıcının görevleri, fatura geçmişi ve tasarruf kayıtları kendi hesabında tutulur (Firebase Authentication + Cloud Firestore, belge: `users/{uid}`). Giriş: e-posta/şifre veya Google; şifre sıfırlama, çıkış ve "hesabımı ve kayıtlarımı sil" desteklenir. Giriş yapmayan ziyaretçi "misafir" olarak kalır ve kayıtları yalnızca o tarayıcıda durur; misafir ilk kez hesap açtığında bu cihazdaki kayıtları hesabına taşınır. Fatura görseli yalnızca cihazda OCR ile okunur, hesaba sadece Toplam m³, gün sayısı ve dönem kaydedilir.

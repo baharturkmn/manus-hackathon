@@ -8,6 +8,8 @@ import { istanbulDayKey, normalizeTaskLog, tasksForDay, withDayTasks, recentDays
 import { HOUSEHOLD_QUESTIONS, normalizeHousehold, tasksForToday, dayProgress, oneTimeTasks, taskById } from './task-catalog.mjs';
 import { milestoneReached, recommendHabitPartner } from './habit-rewards.mjs';
 import { readLiveFile, numericDateLabel } from './live-data.mjs';
+import { parseBill } from './bill-parser.mjs';
+import { loadBillBitmap, prepareBillImage } from './bill-image.mjs';
 
 const liveSnapshot = {
   verifiedAt: '12 Ekim 2026 · 10:00 TSİ',
@@ -389,46 +391,6 @@ function updateBadgeCard(complete) {
   if (complete) drawBadgeCard();
 }
 
-function normalizeBillText(rawText) {
-  return rawText.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/³/g, '3').replace(/m\s*3/gi, 'm3').replace(/\s+/g, ' ').toLowerCase();
-}
-
-function numberAfterBillLabel(text, labelPattern, maxChars = 64) {
-  const match = text.match(labelPattern);
-  if (!match) return null;
-  const slice = text.slice(match.index + match[0].length, match.index + match[0].length + maxChars);
-  const number = slice.match(/(?:^|[^\d])([0-9]{1,5}(?:[.,][0-9]{1,2})?)/);
-  return number ? Number(number[1].replace(',', '.')) : null;
-}
-
-function extractBillFields(rawText, confidence = 0) {
-  const text = normalizeBillText(rawText);
-  const periodMatch = text.match(/donem\s*(?:[:=])?\s*(20\d{4})/) || text.match(/\b20\d{4}\b/);
-  let total = numberAfterBillLabel(text, /toplam\s*m3/i);
-  let daily = numberAfterBillLabel(text, /gunluk\s*m3/i);
-  let days = numberAfterBillLabel(text, /gun\s*sayisi/i);
-  const amount = numberAfterBillLabel(text, /(?:donem\s*tutari|odenecek\s*tutar)/i);
-  let fallbackUsed = false;
-  if (total == null) {
-    const totalCandidates = [...text.matchAll(/(?:tl|t)\s*(\d{1,3}(?:[.,]\d{1,2})?)/gi)]
-      .map(match => Number(match[1].replace(',', '.')))
-      .filter(value => value > 0 && value < 100 && Number.isFinite(value));
-    total = totalCandidates.at(-1) ?? null;
-    fallbackUsed = total != null;
-  }
-  if (daily == null) {
-    const dailyToken = text.match(/\b0?24(?:4)?\b/);
-    daily = dailyToken ? 0.24 : null;
-    fallbackUsed = fallbackUsed || daily != null;
-  }
-  if (days == null) {
-    const dates = [...text.matchAll(/(\d{2})[./](\d{2})[./](\d{4})/g)].map(match => new Date(`${match[3]}-${match[2]}-${match[1]}T00:00:00Z`)).filter(date => !Number.isNaN(date.getTime()));
-    if (dates.length >= 2) days = Math.round(Math.abs(dates[1] - dates[0]) / 86400000);
-    if (days == null && total && daily) days = Math.round(total / daily);
-    fallbackUsed = fallbackUsed || days != null;
-  }
-  return { total, daily, period: periodMatch ? (periodMatch[1] || periodMatch[0]) : '', days, amount, confidence, fallbackUsed, rawText };
-}
 
 function formatM3(value) {
   return `${Number(value).toFixed(2).replace('.', ',')} m³`;
@@ -510,6 +472,14 @@ function renderBillHistory() {
 function saveBillToHistory(fields) {
   const history = loadBillHistory();
   const record = { total: Number(fields.total), days: Number(fields.days), period: fields.period || '', savedAt: new Date().toISOString() };
+  // Details read from the photo are kept when the saved numbers are the ones that were read.
+  const read = billState.current?.readout;
+  if (read && read.total?.value === record.total && read.days?.value === record.days) {
+    record.source = 'ocr';
+    if (read.readings) record.readings = read.readings;
+    if (read.amount && read.amount.confidence !== 'low') record.amount = read.amount.value;
+    if (read.dueDate) record.dueDate = read.dueDate;
+  }
   const duplicate = history.some(item => item.total === record.total && item.days === record.days && item.period === record.period);
   const next = duplicate ? history : [record, ...history].slice(0, 6);
   userStore.set('billHistory', next);
@@ -526,10 +496,18 @@ function resetCurrentBill() {
   input.disabled = false;
   label.hidden = false;
   preview.hidden = true;
-  status.textContent = 'Toplam m³ ve Gün Sayısı okunur.';
+  status.textContent = 'Tüketim, gün sayısı, dönem ve okuma bilgileri okunur; fotoğraf cihazından çıkmaz.';
   badge.textContent = 'MANUEL GİRİŞ HAZIR';
   badge.className = 'extraction-badge';
-  ['total', 'days', 'period'].forEach(field => { document.getElementById(billInputId('current', field)).value = ''; });
+  ['total', 'days', 'period'].forEach(field => {
+    const element = document.getElementById(billInputId('current', field));
+    element.value = '';
+    delete element.closest('label').dataset.confidence;
+  });
+  billState.current = {};
+  const readout = document.getElementById('bill-current-readout');
+  readout.hidden = true;
+  readout.replaceChildren();
   document.getElementById('bill-comparison-feedback').hidden = true;
   document.getElementById('save-current-bill').hidden = true;
 }
@@ -582,31 +560,88 @@ function applyBillFields(fields, source = 'manual', period = 'current') {
   const values = { total: fields.total, days: fields.days, period: fields.period };
   Object.entries(values).forEach(([field, value]) => { document.getElementById(billInputId(period, field)).value = value ?? ''; });
   const badge = document.getElementById(`bill-${period}-badge`);
-  if (source === 'ocr' && fields.total) {
-    badge.textContent = fields.confidence >= 70 ? 'OCR OKUDU · KONTROL ET' : 'OCR TAHMİNİ · KONTROL ET';
-    badge.className = `extraction-badge ${fields.confidence >= 70 ? 'good' : 'needs-check'}`;
-  } else if (source === 'demo') {
+  if (source === 'demo') {
     badge.textContent = 'DEMO VERİSİ · KONTROL ET';
     badge.className = 'extraction-badge good';
-  } else {
+  } else if (source !== 'ocr') {
     badge.textContent = 'MANUEL GİRİŞ HAZIR';
     badge.className = 'extraction-badge';
   }
   renderBillComparison();
 }
 
+const CONFIDENCE_NOTE = { high: 'birden fazla kaynak uyumlu', medium: 'tek kaynak · kontrol et', low: 'belirsiz · kontrol et' };
+const formatReadDate = day => day ? day.split('-').reverse().join('.') : '?';
+
+// Fills the form from parseBill() and explains where each number came from.
+function applyBillReadout(result, period = 'current') {
+  applyBillFields({ total: result.total?.value ?? null, days: result.days?.value ?? null, period: result.period?.value ?? '', readout: result }, 'ocr', period);
+  for (const field of ['total', 'days', 'period']) {
+    document.getElementById(billInputId(period, field)).closest('label').dataset.confidence = result[field]?.confidence || 'missing';
+  }
+  const solid = result.total?.confidence === 'high' && result.days?.confidence === 'high';
+  const badge = document.getElementById(`bill-${period}-badge`);
+  badge.textContent = solid ? 'FATURADAN OKUNDU · TUTARLI' : result.total || result.days ? 'OKUNDU · SARI ALANLARI KONTROL ET' : 'OKUNAMADI · ELLE GİR';
+  badge.className = `extraction-badge ${solid ? 'good' : 'needs-check'}`;
+  const row = (label, item, detail) => item
+    ? `<li data-confidence="${item.confidence}"><span>${label}</span><b>${detail}</b><small>${item.sources.join(' + ')} · ${CONFIDENCE_NOTE[item.confidence]}${item.alternatives?.length ? ` · faturada ${item.alternatives.join(', ')} de okundu` : ''}</small></li>`
+    : `<li data-confidence="missing"><span>${label}</span><b>okunamadı</b><small>elle girebilirsin</small></li>`;
+  const readings = result.readings;
+  const readout = document.getElementById(`bill-${period}-readout`);
+  readout.innerHTML = `<p class="micro-label">FATURADAN OKUNANLAR</p><ul>
+    ${row('Tüketim', result.total, result.total && `${formatM3(result.total.value)}${readings ? ` · endeks ${readings.first.index} → ${readings.last.index}` : ''}`)}
+    ${row('Gün sayısı', result.days, result.days && `${result.days.value} gün${result.readingDates ? ` · ${formatReadDate(result.readingDates.first)} → ${formatReadDate(result.readingDates.last)}` : ''}`)}
+    ${row('Dönem', result.period, result.period && `${result.period.value.slice(0, 4)} / ${result.period.value.slice(4)}`)}
+    ${result.amount ? row('Tutar', result.amount, `${result.amount.value.toFixed(2).replace('.', ',')} TL`) : ''}
+    ${result.dueDate ? `<li data-confidence="info"><span>Son ödeme</span><b>${formatReadDate(result.dueDate)}</b><small>bilgi amaçlı</small></li>` : ''}
+  </ul><p class="bill-readout-note">Fotoğraf yalnızca bu cihazda okundu. Sarı işaretli değerleri faturanla karşılaştır; yanlışsa kutuya doğrusunu yaz.</p>`;
+  readout.hidden = false;
+}
+
+const TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
 let tesseractLoader;
 function loadTesseract() {
   if (window.Tesseract) return Promise.resolve(window.Tesseract);
   if (tesseractLoader) return tesseractLoader;
   tesseractLoader = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    script.src = TESSERACT_URL;
     script.onload = () => window.Tesseract ? resolve(window.Tesseract) : reject(new Error('OCR motoru bulunamadı'));
-    script.onerror = () => reject(new Error('OCR motoru yüklenemedi'));
+    script.onerror = () => { tesseractLoader = null; reject(new Error('OCR motoru yüklenemedi')); };
     document.head.appendChild(script);
   });
   return tesseractLoader;
+}
+
+// One Turkish worker, reused for later bills; progress goes to whoever is reading.
+let ocrWorker;
+let ocrProgress = () => {};
+function getOcrWorker() {
+  ocrWorker ??= loadTesseract().then(Tesseract => Tesseract.createWorker('tur', 1, {
+    logger: message => { if (message.status === 'recognizing text') ocrProgress(message.progress || 0); }
+  })).catch(error => { ocrWorker = null; throw error; });
+  return ocrWorker;
+}
+
+const confidentRead = result => result.total?.confidence === 'high' && result.days?.confidence === 'high' && result.period;
+
+// Pass 1: mild contrast, block layout. Pass 2 (only if pass 1 left doubt):
+// darker image, sparse text, which catches labels and values on separate lines.
+async function readBillPhoto(file, onStep) {
+  const bitmap = await loadBillBitmap(file);
+  const worker = await getOcrWorker();
+  onStep('Fatura okunuyor', 1);
+  await worker.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1' });
+  const first = (await worker.recognize(prepareBillImage(bitmap, { gamma: 1 }))).data.text;
+  let result = parseBill([first]);
+  if (!confidentRead(result)) {
+    onStep('Değerler ikinci kez kontrol ediliyor', 2);
+    await worker.setParameters({ tessedit_pageseg_mode: '11' });
+    const second = (await worker.recognize(prepareBillImage(bitmap, { gamma: 1.8 }))).data.text;
+    result = parseBill([first, second]);
+  }
+  bitmap.close?.();
+  return result;
 }
 
 async function processBillFile(file, period) {
@@ -621,17 +656,23 @@ async function processBillFile(file, period) {
   dropLabel.hidden = true;
   fileInput.disabled = true;
   status.textContent = 'Fatura görüntüsü hazırlanıyor; OCR motoru yükleniyor…';
+  let step = 'Fatura okunuyor';
+  ocrProgress = progress => { status.textContent = `${step}… %${Math.round(progress * 100)}`; };
   try {
-    const Tesseract = await loadTesseract();
-    const result = await Tesseract.recognize(file, 'tur', { logger: message => {
-      if (message.status === 'recognizing text') status.textContent = `Fatura okunuyor… %${Math.round((message.progress || 0) * 100)}`;
-    }});
-    const fields = extractBillFields(result.data.text, result.data.confidence || 0);
-    applyBillFields(fields, 'ocr', period);
-    status.textContent = fields.total ? (fields.fallbackUsed ? 'OCR etiketi net değil; Toplam m³ için en iyi tahmin dolduruldu. Sonucu kontrol edip düzeltebilirsin.' : 'Toplam m³ bulundu. Sonucu kontrol edip gerekirse düzeltebilirsin.') : 'OCR tamamlandı; Toplam m³ net seçilemedi. Alanı elle doldurabilirsin.';
+    const result = await readBillPhoto(file, (label, pass) => { step = pass === 2 ? `${label} (2/2)` : label; });
+    applyBillReadout(result, period);
+    status.textContent = confidentRead(result)
+      ? result.period.confidence === 'high'
+        ? 'Tüketim, gün sayısı ve dönem okundu; değerler birbirini doğruluyor.'
+        : 'Tüketim ve gün sayısı birbirini doğruluyor. Dönemi faturanla karşılaştır.'
+      : result.total || result.days
+        ? 'Okunan değerler forma yazıldı. Sarı işaretli alanları faturanla karşılaştırıp gerekirse düzelt.'
+        : 'Bu fotoğraftan tüketim okunamadı. Daha net bir fotoğraf deneyebilir ya da alanları elle doldurabilirsin.';
   } catch (error) {
     document.getElementById(`bill-${period}-badge`).textContent = 'MANUEL KONTROL GEREKLİ';
     status.textContent = 'Otomatik okuma şu an tamamlanamadı. Toplam m³ alanını elle girerek devam edebilirsin.';
+  } finally {
+    ocrProgress = () => {};
   }
 }
 
@@ -646,7 +687,10 @@ function wireBillUpload() {
   const period = 'current';
   const input = document.getElementById('bill-current-input');
   const dropzone = document.getElementById('current-dropzone');
-  ['total', 'days', 'period'].forEach(field => document.getElementById(billInputId(period, field)).addEventListener('input', scheduleAutoCalculate));
+  ['total', 'days', 'period'].forEach(field => document.getElementById(billInputId(period, field)).addEventListener('input', event => {
+    event.target.closest('label').dataset.confidence = 'manual';
+    scheduleAutoCalculate();
+  }));
   input.addEventListener('change', event => processBillFile(event.target.files[0], period));
   ['dragenter', 'dragover'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.add('dragging'); }));
   ['dragleave', 'drop'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.remove('dragging'); }));
