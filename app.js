@@ -5,7 +5,8 @@ import { initializeWorkspaceTabs } from './workspace-tabs.mjs';
 import { initializeAccount } from './account.mjs';
 import { createLocalBackend, createUserStore } from './user-store.mjs';
 import { istanbulDayKey, normalizeTaskLog, tasksForDay, withDayTasks, recentDays, currentStreak } from './task-log.mjs';
-import { HOUSEHOLD_QUESTIONS, normalizeHousehold, tasksForToday, dayProgress, oneTimeTasks, taskById } from './task-catalog.mjs';
+import { billInsights, SEASONAL_SOURCE } from './bill-insights.mjs';
+import { MAX_PEOPLE, HOUSEHOLD_QUESTIONS, normalizeHousehold, tasksForToday, dayProgress, oneTimeTasks, taskById } from './task-catalog.mjs';
 import { milestoneReached, recommendHabitPartner } from './habit-rewards.mjs';
 import { readLiveFile, numericDateLabel } from './live-data.mjs';
 import { parseBill } from './bill-parser.mjs';
@@ -277,7 +278,8 @@ function renderHouseholdForm() {
   const household = currentHousehold();
   document.getElementById('household-options').innerHTML = HOUSEHOLD_QUESTIONS.map(q => `
     <label class="household-option"><input type="checkbox" name="${q.id}" ${household.answers[q.id] ? 'checked' : ''}><span>${q.text}</span></label>`).join('');
-  const yes = HOUSEHOLD_QUESTIONS.filter(q => household.answers[q.id]).map(q => q.short);
+  document.getElementById('household-people').value = household.people ?? '';
+  const yes = [...(household.people ? [`${household.people} kişi`] : []), ...HOUSEHOLD_QUESTIONS.filter(q => household.answers[q.id]).map(q => q.short)];
   document.getElementById('household-summary').textContent = household.setupDone
     ? `Evin: ${yes.length ? yes.join(', ') : 'temel görevler'} · değiştirmek için aç`
     : 'Sana uyan görevleri göstermek için birkaç soru';
@@ -336,9 +338,13 @@ function wireTasks() {
     event.preventDefault();
     const household = currentHousehold();
     for (const q of HOUSEHOLD_QUESTIONS) household.answers[q.id] = event.target.elements[q.id].checked;
+    const people = Number(event.target.elements.people.value);
+    household.people = Number.isInteger(people) && people >= 1 && people <= MAX_PEOPLE ? people : null;
     household.setupDone = true;
     userStore.set('household', household);
     renderTasks();
+    // The bill commentary uses the household size.
+    if (!document.getElementById('bill-comparison-feedback').hidden) renderBillComparison();
   });
 }
 
@@ -512,6 +518,17 @@ function resetCurrentBill() {
   document.getElementById('save-current-bill').hidden = true;
 }
 
+// "Fatura yorumu": per-person use and the seasonal effect (bill-insights.mjs).
+// Commentary only: the coupon still follows the plain 30-day change.
+function billInsightBlock(previous, current) {
+  const { lines, needs } = billInsights({ previous, current, people: currentHousehold().people, history: loadBillHistory() });
+  const hints = [];
+  if (needs.includes('people')) hints.push('Evde kaç kişi yaşadığını Günlük Görevler’deki “Evini tanıt” kartına yazarsan kişi başı tüketimi de gösteririm.');
+  if (needs.includes('period')) hints.push('İki faturanın dönemini (YYYYMM) girersen mevsim etkisini de hesaba katarım.');
+  if (!lines.length && !hints.length) return '';
+  return `<div class="bill-insight"><p class="micro-label">FATURA YORUMU</p>${lines.length ? `<ul>${lines.map(line => `<li>${line}</li>`).join('')}</ul>` : ''}${hints.map(hint => `<p class="bill-insight-hint">${hint}</p>`).join('')}<p class="bill-insight-source">Mevsim etkisi: ${SEASONAL_SOURCE}. Yorum bilgi amaçlıdır; kupon hesabı 30 güne normalize edilmiş düz değişime göre yapılır.</p></div>`;
+}
+
 function renderBillComparison() {
   const draft = readBillPeriod('current');
   const pair = resolveBillPair(loadBillHistory(), draft);
@@ -541,6 +558,7 @@ function renderBillComparison() {
   const previousPeriod = /^\d{6}$/.test(previous.period) ? `${previous.period.slice(0, 4)} / ${previous.period.slice(4)}` : 'dönem belirtilmedi';
   const currentPeriod = /^\d{6}$/.test(current.period) ? `${current.period.slice(0, 4)} / ${current.period.slice(4)}` : 'dönem belirtilmedi';
   const changeLabel = change < 0 ? `−${formatPercent(reduction)}` : change > 0 ? `+${formatPercent(change)}` : '0%';
+  const insightBlock = billInsightBlock(previous, current);
   let rewardBlock = '';
   if (eligible) {
     rewardBlock = `<div class="verified-reward ${tier === 'top' ? 'top' : ''}"><span class="reward-badge">${tier === 'top' ? 'TOP SAVER' : 'VERIFIED SAVINGS'}</span><strong>Doğrulanan tasarruf: ${formatPercent(reduction)}</strong><p>Ödülün, iki faturanın 30 güne normalize edilmiş tüketim düşüşüne göre hesaplandı; marka kartlarında hazır indirim gösterilmez.</p><button type="button" class="personal-reward-toggle" data-reward-toggle aria-expanded="false" aria-controls="personal-reward-panel">ÖDÜLÜMÜ GÖR</button><div class="personal-reward-panel" id="personal-reward-panel" hidden><label class="reward-brand-label" for="reward-brand">Alışkanlıklarına göre önerilen marka · değiştirebilirsin<select id="reward-brand">${liveSnapshot.partners.map(partner => `<option value="${partner.codePrefix}">${partner.brand.split(' · ')[0]}</option>`).join('')}</select></label><p class="reward-category-note" id="reward-category-note"></p><div id="personal-coupon-content"></div><p class="personal-reward-policy">İndirim, seçilen marka ve faturadaki doğrulanmış tüketim düşüşüne göre belirlenir. Gerçek kampanya değildir.</p></div></div>`;
@@ -548,7 +566,7 @@ function renderBillComparison() {
     const intro = reduction > 0 ? `Küçük bir düşüş var: ${formatPercent(reduction)}; kupon eşiği 5%.` : 'Henüz tüketim düşüşü görülmedi.';
     rewardBlock = `<div class="verified-reward support"><span class="reward-badge">HENÜZ ÖDÜL YOK</span><strong>${intro}</strong><p>Bu karşılaştırmada kupon açılmadı. Gelecek ay için aşağıdaki küçük adımlardan birini deneyebilirsin.</p></div>`;
   }
-  feedback.innerHTML = `<div class="comparison-result-head"><div><p class="micro-label">PERSONAL, VERIFIED-SAVINGS LAYER</p><h3>${eligible ? 'Son faturaya göre düşüşün ödüle dönüştü.' : 'Son kayıtla arandaki fark'}</h3></div><span class="comparison-change ${tier}">${changeLabel}</span></div><p class="comparison-source">${sourceLabel} Dönem bilgisi varsa tarih sırası; yoksa kayıt sırası esas alınır.</p><p class="comparison-plain-line">Önceki kayıt: ${formatM3(previousMonthly)}/ay → Güncel fatura: ${formatM3(currentMonthly)}/ay → Değişim: ${changeLabel}</p><div class="verified-before-after"><div class="usage-panel previous"><span>ÖNCEKİ KAYIT · 30 GÜN</span><strong>${formatM3(previousMonthly)}</strong><small>${formatM3(previous.total)} · ${previous.days} gün · ${previousPeriod}</small></div><div class="verified-arrow">→</div><div class="usage-panel current"><span>GÜNCEL FATURA · 30 GÜN</span><strong>${formatM3(currentMonthly)}</strong><small>${formatM3(current.total)} · ${current.days} gün · ${currentPeriod}</small></div></div>${rewardBlock}${guidanceBlock}<p class="comparison-disclaimer">Bu kupon şehir genelindeki baraj seviyesinden bağımsızdır: sadece senin fatura geçmişindeki ardışık, 30 güne normalize edilmiş tüketim farkına göre açılır. İstanbul’un Kritik Tasarruf Modu banner’ı üstte ayrı bir genel durum olarak kalır.</p>`;
+  feedback.innerHTML = `<div class="comparison-result-head"><div><p class="micro-label">PERSONAL, VERIFIED-SAVINGS LAYER</p><h3>${eligible ? 'Son faturaya göre düşüşün ödüle dönüştü.' : 'Son kayıtla arandaki fark'}</h3></div><span class="comparison-change ${tier}">${changeLabel}</span></div><p class="comparison-source">${sourceLabel} Dönem bilgisi varsa tarih sırası; yoksa kayıt sırası esas alınır.</p><p class="comparison-plain-line">Önceki kayıt: ${formatM3(previousMonthly)}/ay → Güncel fatura: ${formatM3(currentMonthly)}/ay → Değişim: ${changeLabel}</p><div class="verified-before-after"><div class="usage-panel previous"><span>ÖNCEKİ KAYIT · 30 GÜN</span><strong>${formatM3(previousMonthly)}</strong><small>${formatM3(previous.total)} · ${previous.days} gün · ${previousPeriod}</small></div><div class="verified-arrow">→</div><div class="usage-panel current"><span>GÜNCEL FATURA · 30 GÜN</span><strong>${formatM3(currentMonthly)}</strong><small>${formatM3(current.total)} · ${current.days} gün · ${currentPeriod}</small></div></div>${insightBlock}${rewardBlock}${guidanceBlock}<p class="comparison-disclaimer">Bu kupon şehir genelindeki baraj seviyesinden bağımsızdır: sadece senin fatura geçmişindeki ardışık, 30 güne normalize edilmiş tüketim farkına göre açılır. İstanbul’un Kritik Tasarruf Modu banner’ı üstte ayrı bir genel durum olarak kalır.</p>`;
   feedback.className = `bill-comparison-feedback ${tier}`;
   feedback.hidden = false;
   renderPartnerRewards();

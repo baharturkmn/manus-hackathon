@@ -47,6 +47,16 @@ Görev listesi `task-catalog.mjs`'den gelir ve her kullanıcıya göre değişir
 
 `firestore.rules` bu yüzden `household` alanına izin verir; kural değişikliği Firebase'e yüklenmeden hesaplı kullanıcıların kayıtları reddedilir.
 
+## Fatura yorumu
+
+Fatura karşılaştırmasının altında `bill-insights.mjs`'nin ürettiği kısa bir yorum kartı vardır:
+
+- **Kişi başı tüketim:** "Evini tanıt" kartındaki kişi sayısıyla litre/kişi/gün.
+- **Mevsim etkisi:** İstanbul'da tüketim şubatta yıl ortalamasının yaklaşık %93'üne iner, ağustosta %108'e çıkar (İBB Açık Veri, İSKİ günlük tüketim 2011–2023). İki faturanın kapsadığı günlere göre mevsimden beklenen değişim hesaplanır ve kullanıcının değişimi buna göre düzeltilir.
+- **Geçen yılın aynı dönemi:** Geçmişte yaklaşık bir yıl önceki fatura varsa mevsimden bağımsız karşılaştırma olarak gösterilir.
+
+Yorum bilgi amaçlıdır; kupon hâlâ 30 güne normalize edilmiş düz değişime göre hesaplanır.
+
 ## Kritik mod
 
 Seviye (Normal, Dikkat, Kritik, Acil) her saatlik çalıştırmada `critical-mode.mjs` ile `public/data/history.json`'daki günlük doluluk geçmişinden hesaplanır ve `live.json`'daki `criticalMode` bloğuna yazılır; site yalnızca bu bloğu gösterir.
