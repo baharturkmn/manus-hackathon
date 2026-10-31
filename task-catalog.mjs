@@ -56,7 +56,9 @@ export const TASKS = Object.freeze([
 const byId = Object.fromEntries(TASKS.map(task => [task.id, task]));
 export const taskById = id => byId[id] || null;
 
-// Household record: { answers: {questionId: bool}, setupDone: bool, oneTime: {taskId: 'YYYY-MM-DD'} }
+// Household record: { answers: {questionId: bool}, people: 1–12 | null, setupDone: bool, oneTime: {taskId: 'YYYY-MM-DD'} }
+export const MAX_PEOPLE = 12;
+const validPeople = value => Number.isInteger(value) && value >= 1 && value <= MAX_PEOPLE;
 export function normalizeHousehold(raw) {
   const answers = {};
   for (const q of HOUSEHOLD_QUESTIONS) {
@@ -67,13 +69,14 @@ export function normalizeHousehold(raw) {
   for (const [id, day] of Object.entries(raw?.oneTime || {})) {
     if (byId[id]?.section === 'oneTime' && /^\d{4}-\d{2}-\d{2}$/.test(day)) oneTime[id] = day;
   }
-  return { answers, setupDone: raw?.setupDone === true, oneTime };
+  return { answers, people: validPeople(raw?.people) ? raw.people : null, setupDone: raw?.setupDone === true, oneTime };
 }
 
 export function isHousehold(value) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
-  const { answers = {}, oneTime = {}, setupDone = false } = value;
+  const { answers = {}, oneTime = {}, setupDone = false, people = null } = value;
   return typeof setupDone === 'boolean'
+    && (people === null || validPeople(people))
     && answers !== null && typeof answers === 'object' && !Array.isArray(answers)
     && Object.values(answers).every(v => typeof v === 'boolean')
     && oneTime !== null && typeof oneTime === 'object' && !Array.isArray(oneTime)

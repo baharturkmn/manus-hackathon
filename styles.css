@@ -830,6 +830,16 @@ body[data-user-loading] .task-list { opacity: .55; cursor: progress; }
 .bill-readout li[data-confidence="medium"], .bill-readout li[data-confidence="low"], .bill-readout li[data-confidence="missing"] { border-left-color: #dbb75e; }
 .bill-readout-note { margin: 10px 0 0; font-size: 11px; line-height: 1.5; color: var(--muted); }
 .bill-drop-label[hidden] { display: none; }
+
+/* Bill commentary (bill-insights.mjs) */
+.bill-insight { margin: 16px 0; padding: 14px 16px; border-left: 3px solid var(--water); background: #eef6f6; }
+.bill-insight ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13px; line-height: 1.5; }
+.bill-insight-hint { margin: 8px 0 0; font-size: 12px; color: var(--ink); }
+.bill-insight-source { margin: 10px 0 0; color: var(--muted); font: 9.5px/1.5 var(--mono); }
+.household-people { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; }
+.household-people input { width: 70px; padding: 6px 8px; border: 1px solid var(--line); font: inherit; font-weight: 500; background: var(--white); }
+
+/* Saved bills: clickable history and detail window */
 button.history-item { width: 100%; font: inherit; text-align: left; cursor: pointer; }
 button.history-item:hover, button.history-item:focus-visible { border-color: var(--water); outline: none; box-shadow: 0 0 0 2px rgba(8,127,161,.18); }
 .bill-keep-photo { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--white); cursor: pointer; }
