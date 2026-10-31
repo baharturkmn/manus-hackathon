@@ -40,6 +40,7 @@ export function initials(name) {
 
 function createFirestoreBackend({ fs, db, uid, onError }) {
   const ref = fs.doc(db, 'users', uid);
+  const imageRef = id => fs.doc(db, 'users', uid, 'billImages', id);
   let pending = {};
   let timer = null;
   const backend = {
@@ -66,9 +67,28 @@ function createFirestoreBackend({ fs, db, uid, onError }) {
         onError(error);
       }
     },
+    // Bill photos the user chose to keep, one document per bill.
+    images: {
+      async save(id, image) {
+        await fs.setDoc(imageRef(id), { ...image, createdAt: fs.serverTimestamp() });
+      },
+      async load(id) {
+        const snapshot = await fs.getDoc(imageRef(id));
+        return snapshot.exists() ? snapshot.data() : null;
+      },
+      async remove(id) {
+        await fs.deleteDoc(imageRef(id));
+      },
+      async removeAll() {
+        const snapshot = await fs.getDocs(fs.collection(db, 'users', uid, 'billImages'));
+        await Promise.all(snapshot.docs.map(item => fs.deleteDoc(item.ref)));
+      }
+    },
     async remove() {
       clearTimeout(timer);
       pending = {};
+      // Firestore does not delete sub-collections with their parent.
+      await backend.images.removeAll();
       await fs.deleteDoc(ref);
     }
   };
@@ -244,7 +264,7 @@ export async function initializeAccount({ store, storage, onDataChanged, onSwitc
     }, 'Çıkış yapıldı. Kayıtların hesabında duruyor.');
   });
   $('account-delete').addEventListener('click', () => {
-    if (!window.confirm('Hesabın ve hesabındaki tüm görev, fatura ve tasarruf kayıtları kalıcı olarak silinecek. Emin misin?')) return;
+    if (!window.confirm('Hesabın ve hesabındaki tüm görev, fatura, fatura fotoğrafı ve tasarruf kayıtları kalıcı olarak silinecek. Emin misin?')) return;
     const current = authInstance.currentUser;
     // Firebase refuses to delete accounts after an old sign-in; check first so
     // the data is never deleted while the account itself stays.

@@ -52,3 +52,26 @@ export function prepareBillImage(bitmap, { gamma = 1, targetWidth = 2400, maxSca
   context.putImageData(image, 0, 0);
   return canvas;
 }
+
+// Shrinks a bill photo for keeping in the user's account: longest side at most
+// `maxSide`, JPEG quality lowered (and the image scaled down) until the base64
+// text fits `maxChars`, well under Firestore's 1 MiB document limit.
+export function compressBillPhoto(bitmap, { maxSide = 1600, maxChars = 700_000 } = {}) {
+  let side = maxSide;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const scale = Math.min(1, side / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const context = canvas.getContext('2d');
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    for (const quality of [0.8, 0.68, 0.56]) {
+      const data = canvas.toDataURL('image/jpeg', quality).split(',')[1];
+      if (data.length <= maxChars) return { data, type: 'image/jpeg', width: canvas.width, height: canvas.height };
+    }
+    side = Math.round(side * 0.75);
+  }
+  throw new Error('Fotoğraf yeterince küçültülemedi');
+}

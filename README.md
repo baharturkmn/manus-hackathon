@@ -61,7 +61,9 @@ Seviye (Normal, Dikkat, Kritik, Acil) her saatlik çalıştırmada `critical-mod
 
 ## Fatura okuma
 
-Fatura fotoğrafı yalnızca cihazda okunur (Tesseract.js, Türkçe); sunucuya gönderilmez.
+Fatura fotoğrafı yalnızca cihazda okunur (Tesseract.js, Türkçe); okuma için sunucuya gönderilmez.
+
+**Kayıtlı faturalar:** Kaydedilen her fatura okunan bilgileriyle (tüketim, gün, dönem, okuma tarihleri, endeksler, güvenli okunduysa tutar ve son ödeme) kullanıcının `billHistory` alanında saklanır; en fazla 24 fatura (`bill-records.mjs`). Geçmişteki bir faturaya tıklayınca ayrıntı penceresi açılır. Giriş yapmış kullanıcı yüklerken "Fotoğrafı hesabıma da kaydet"i işaretlerse fotoğraf en uzun kenarı 1600 px olacak şekilde JPEG'e sıkıştırılır ve `users/{uid}/billImages/{faturaId}` belgesine yazılır (Storage değil Firestore; ücretsiz planda çalışır). Fotoğraf tek başına ya da faturayla birlikte silinebilir; hesap silinince bütün fotoğraflar da silinir. Misafirler fotoğraf saklayamaz. `firestore.rules` bu belgelere yalnızca sahibinin erişmesine ve yalnızca JPEG metnine (< 900 KB) izin verir.
 
 1. **Ön işleme** (`bill-image.mjs`): fotoğraf EXIF yönüne göre çevrilir, küçükse büyütülür, renk kanallarının en koyusu alınır (açık mavi/gri etiketler koyulaşır) ve kontrast gerilir.
 2. **İki geçiş**: önce blok düzeninde okunur; tüketim ve gün sayısı kesinleşmezse daha koyu görüntü dağınık metin modunda ikinci kez okunur.
