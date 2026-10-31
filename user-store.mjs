@@ -76,6 +76,8 @@ export function createUserStore(initialBackend) {
   let data = {};
   return {
     get kind() { return backend.kind; },
+    // Photo storage of the active account; null for guests.
+    get images() { return backend.images || null; },
     get(field, fallback) {
       return field in data ? structuredClone(data[field]) : fallback;
     },

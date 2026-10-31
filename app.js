@@ -9,7 +9,8 @@ import { HOUSEHOLD_QUESTIONS, normalizeHousehold, tasksForToday, dayProgress, on
 import { milestoneReached, recommendHabitPartner } from './habit-rewards.mjs';
 import { readLiveFile, numericDateLabel } from './live-data.mjs';
 import { parseBill } from './bill-parser.mjs';
-import { loadBillBitmap, prepareBillImage } from './bill-image.mjs';
+import { loadBillBitmap, prepareBillImage, compressBillPhoto } from './bill-image.mjs';
+import { newBillId, billKey, addBill, findBill, removeBill, withoutImage, isDuplicateBill } from './bill-records.mjs';
 
 const liveSnapshot = {
   verifiedAt: '12 Ekim 2026 · 10:00 TSİ',
@@ -463,15 +464,131 @@ function renderBillHistory() {
   if (count) count.textContent = `${history.length} kayıt`;
   if (!list) return;
   list.innerHTML = history.length ? history.map((bill, index) => `
-    <div class="history-item ${index === 0 ? 'latest' : ''}">
-      <div><span>${index === 0 ? 'SON REFERANS' : 'GEÇMİŞ KAYIT'}</span><strong>${bill.period && /^\d{6}$/.test(bill.period) ? `${bill.period.slice(0, 4)} / ${bill.period.slice(4)}` : 'Dönem belirtilmedi'}</strong></div>
+    <button type="button" class="history-item ${index === 0 ? 'latest' : ''}" data-bill-key="${encodeURIComponent(billKey(bill))}" aria-label="${periodLabel(bill.period)} faturasının ayrıntılarını aç">
+      <div><span>${index === 0 ? 'SON REFERANS' : 'GEÇMİŞ KAYIT'}${bill.hasImage ? ' · FOTOĞRAFLI' : ''}</span><strong>${periodLabel(bill.period)}</strong></div>
       <div><b>${formatM3(bill.total)}</b><small>${bill.days} gün · ${formatM3(bill.total / bill.days * 30)}/ay</small></div>
-    </div>`).join('') : '<p class="history-empty">Henüz kayıt yok. Demo referansı ekleyebilir veya ilk faturayı kaydedebilirsin.</p>';
+    </button>`).join('') : '<p class="history-empty">Henüz kayıt yok. Demo referansı ekleyebilir veya ilk faturayı kaydedebilirsin.</p>';
+  const status = document.getElementById('bill-history-status');
+  if (status && !status.dataset.message) {
+    status.textContent = userStore.kind === 'account'
+      ? 'Faturaların hesabında saklanır; ayrıntıları görmek için bir faturaya tıkla.'
+      : 'Giriş yapmadan faturalar yalnızca bu tarayıcıda tutulur. Ayrıntılar için bir faturaya tıkla.';
+  }
 }
 
-function saveBillToHistory(fields) {
-  const history = loadBillHistory();
-  const record = { total: Number(fields.total), days: Number(fields.days), period: fields.period || '', savedAt: new Date().toISOString() };
+function periodLabel(period) {
+  return period && /^\d{6}$/.test(period) ? `${period.slice(0, 4)} / ${period.slice(4)}` : 'Dönem belirtilmedi';
+}
+
+function showHistoryStatus(message) {
+  const status = document.getElementById('bill-history-status');
+  status.dataset.message = '1';
+  status.textContent = message;
+  clearTimeout(showHistoryStatus.timer);
+  showHistoryStatus.timer = setTimeout(() => { delete status.dataset.message; renderBillHistory(); }, 8000);
+}
+
+// Bill detail window: everything kept for the bill and, if saved, its photo.
+async function openBillDialog(key) {
+  const bill = findBill(loadBillHistory(), key);
+  if (!bill) return;
+  const dialog = document.getElementById('bill-dialog');
+  const body = document.getElementById('bill-dialog-body');
+  const row = (label, value) => value ? `<div><dt>${label}</dt><dd>${value}</dd></div>` : '';
+  const readings = bill.readings;
+  body.innerHTML = `<h2 id="bill-dialog-title">${periodLabel(bill.period)}</h2>
+    <dl class="bill-detail">
+      ${row('Tüketim', formatM3(bill.total))}
+      ${row('Gün sayısı', `${bill.days} gün`)}
+      ${row('30 güne göre', `${formatM3(bill.total / bill.days * 30)}/ay`)}
+      ${readings ? row('Okuma', `${formatReadDate(readings.first.date)} → ${formatReadDate(readings.last.date)}`) : ''}
+      ${readings ? row('Endeks', `${readings.first.index} → ${readings.last.index}`) : ''}
+      ${bill.amount ? row('Tutar', `${Number(bill.amount).toFixed(2).replace('.', ',')} TL`) : ''}
+      ${bill.dueDate ? row('Son ödeme', formatReadDate(bill.dueDate)) : ''}
+      ${row('Kaynak', bill.source === 'ocr' ? 'Faturadan okundu' : 'Elle girildi')}
+      ${bill.savedAt ? row('Kaydedildi', new Date(bill.savedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })) : ''}
+    </dl>
+    <div class="bill-dialog-photo" id="bill-dialog-photo">${bill.hasImage ? '<p>Fotoğraf yükleniyor…</p>' : '<p>Bu faturanın fotoğrafı kaydedilmedi.</p>'}</div>
+    <p class="demo-profile-error" id="bill-dialog-error" hidden role="alert"></p>
+    ${bill.hasImage ? '<button type="button" class="demo-profile-secondary" id="bill-dialog-delete-photo">FOTOĞRAFI SİL</button>' : ''}
+    <button type="button" class="demo-profile-secondary account-danger" id="bill-dialog-delete">FATURAYI SİL</button>`;
+  dialog.dataset.billKey = key;
+  if (!dialog.open) dialog.showModal();
+  if (!bill.hasImage) return;
+  const photo = document.getElementById('bill-dialog-photo');
+  try {
+    const image = await userStore.images?.load(bill.id);
+    if (dialog.dataset.billKey !== key) return;
+    photo.innerHTML = image
+      ? `<img src="data:${image.type};base64,${image.data}" alt="${periodLabel(bill.period)} faturasının fotoğrafı" width="${image.width}" height="${image.height}">`
+      : '<p>Fotoğraf bulunamadı.</p>';
+  } catch {
+    photo.innerHTML = '<p>Fotoğraf şu an yüklenemedi; bağlantını kontrol edip yeniden aç.</p>';
+  }
+}
+
+async function deleteBillPhoto(key) {
+  const bill = findBill(loadBillHistory(), key);
+  if (!bill?.hasImage) return;
+  await userStore.images?.remove(bill.id);
+  userStore.set('billHistory', withoutImage(userStore.get('billHistory', []), key));
+  renderBillHistory();
+  await openBillDialog(key);
+}
+
+async function deleteBill(key) {
+  const bill = findBill(loadBillHistory(), key);
+  if (!bill) return;
+  if (bill.hasImage) await userStore.images?.remove(bill.id);
+  userStore.set('billHistory', removeBill(userStore.get('billHistory', []), key));
+  document.getElementById('bill-dialog').close();
+  renderBillHistory();
+  renderBillComparison();
+  showHistoryStatus(`${periodLabel(bill.period)} faturası silindi.`);
+}
+
+function wireBillDialog() {
+  const dialog = document.getElementById('bill-dialog');
+  document.getElementById('bill-history-list').addEventListener('click', event => {
+    const item = event.target.closest('[data-bill-key]');
+    if (item) openBillDialog(decodeURIComponent(item.dataset.billKey));
+  });
+  document.getElementById('bill-dialog-close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', async event => {
+    const key = dialog.dataset.billKey;
+    const error = document.getElementById('bill-dialog-error');
+    const run = async action => {
+      event.target.disabled = true;
+      try { await action(); } catch { error.hidden = false; error.textContent = 'İşlem tamamlanamadı; bağlantını kontrol edip tekrar dene.'; event.target.disabled = false; }
+    };
+    if (event.target.id === 'bill-dialog-delete-photo' && window.confirm('Bu faturanın fotoğrafı silinsin mi? Okunan bilgiler kalır.')) await run(() => deleteBillPhoto(key));
+    if (event.target.id === 'bill-dialog-delete' && window.confirm('Bu fatura ve varsa fotoğrafı kalıcı olarak silinsin mi?')) await run(() => deleteBill(key));
+    if (event.target === dialog) {
+      const rect = dialog.getBoundingClientRect();
+      if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
+    }
+  });
+}
+
+// The "keep the photo" choice is offered once a photo is loaded; only accounts can keep photos.
+let billPhoto = null;
+function updateKeepPhotoOption() {
+  const row = document.getElementById('bill-keep-photo-row');
+  const input = document.getElementById('bill-keep-photo');
+  const note = document.getElementById('bill-keep-photo-note');
+  const canKeep = Boolean(userStore.images);
+  row.hidden = !billPhoto;
+  input.disabled = !canKeep;
+  if (!canKeep) input.checked = false;
+  note.textContent = canKeep
+    ? 'Faturada adın ve adresin görünür. İşaretlersen küçültülmüş bir kopyası yalnızca senin görebileceğin hesabına kaydedilir; istediğin an silebilirsin.'
+    : 'Fotoğrafı saklamak için giriş yap. Misafir olarak yalnızca okunan bilgiler bu tarayıcıda kaydedilir.';
+}
+
+function saveBillToHistory(fields, { id = newBillId(), hasImage = false } = {}) {
+  const history = userStore.get('billHistory', []);
+  const record = { id, total: Number(fields.total), days: Number(fields.days), period: fields.period || '', savedAt: new Date().toISOString() };
+  if (hasImage) record.hasImage = true;
   // Details read from the photo are kept when the saved numbers are the ones that were read.
   const read = billState.current?.readout;
   if (read && read.total?.value === record.total && read.days?.value === record.days) {
@@ -480,10 +597,12 @@ function saveBillToHistory(fields) {
     if (read.amount && read.amount.confidence !== 'low') record.amount = read.amount.value;
     if (read.dueDate) record.dueDate = read.dueDate;
   }
-  const duplicate = history.some(item => item.total === record.total && item.days === record.days && item.period === record.period);
-  const next = duplicate ? history : [record, ...history].slice(0, 6);
+  const { history: next, dropped } = addBill(history, record);
   userStore.set('billHistory', next);
+  // Bills pushed out by the limit take their photos with them.
+  for (const old of dropped) if (old.hasImage) userStore.images?.remove(old.id).catch(() => {});
   renderBillHistory();
+  return next.includes(record);
 }
 
 function resetCurrentBill() {
@@ -496,7 +615,7 @@ function resetCurrentBill() {
   input.disabled = false;
   label.hidden = false;
   preview.hidden = true;
-  status.textContent = 'Tüketim, gün sayısı, dönem ve okuma bilgileri okunur; fotoğraf cihazından çıkmaz.';
+  status.textContent = 'Tüketim, gün sayısı, dönem ve okuma bilgileri cihazında okunur.';
   badge.textContent = 'MANUEL GİRİŞ HAZIR';
   badge.className = 'extraction-badge';
   ['total', 'days', 'period'].forEach(field => {
@@ -505,6 +624,9 @@ function resetCurrentBill() {
     delete element.closest('label').dataset.confidence;
   });
   billState.current = {};
+  billPhoto = null;
+  document.getElementById('bill-keep-photo').checked = false;
+  updateKeepPhotoOption();
   const readout = document.getElementById('bill-current-readout');
   readout.hidden = true;
   readout.replaceChildren();
@@ -652,6 +774,8 @@ async function processBillFile(file, period) {
   const dropLabel = document.querySelector(`[data-period="${period}"] .bill-drop-label`);
   const fileInput = document.getElementById(`bill-${period}-input`);
   image.src = URL.createObjectURL(file);
+  billPhoto = file;
+  updateKeepPhotoOption();
   preview.hidden = false;
   dropLabel.hidden = true;
   fileInput.disabled = true;
@@ -705,15 +829,37 @@ function wireBillUpload() {
     document.getElementById('bill-history-status').textContent = 'Demo referansı kaydedildi: 12 m³ · 30 gün. Şimdi güncel faturayı girerek karşılaştırabilirsin.';
     renderBillComparison();
   });
-  document.getElementById('save-current-bill').addEventListener('click', () => {
+  document.getElementById('save-current-bill').addEventListener('click', async event => {
     const current = readBillPeriod('current');
     clearTimeout(autoCalculateTimer);
     if (!current.totalEntered || !current.daysEntered || !validBill(current) || (current.period && !validPeriod(current.period))) {
       renderBillComparison();
       return;
     }
-    saveBillToHistory(current);
-    document.getElementById('bill-history-status').textContent = 'Güncel fatura geçmişe kaydedildi. Bir sonraki faturada bu kayıt yeni referans olacak.';
+    const button = event.currentTarget;
+    const id = newBillId();
+    let hasImage = false;
+    let photoNote = '';
+    const keepPhoto = document.getElementById('bill-keep-photo').checked && billPhoto && userStore.images;
+    if (keepPhoto && !isDuplicateBill(userStore.get('billHistory', []), { total: current.total, days: current.days, period: current.period || '' })) {
+      button.disabled = true;
+      button.textContent = 'FOTOĞRAF KAYDEDİLİYOR…';
+      try {
+        const bitmap = await loadBillBitmap(billPhoto);
+        await userStore.images.save(id, compressBillPhoto(bitmap));
+        bitmap.close?.();
+        hasImage = true;
+      } catch {
+        photoNote = ' Fotoğraf kaydedilemedi; okunan bilgiler kaydedildi.';
+      } finally {
+        button.disabled = false;
+        button.textContent = 'KAYDET · SONRAKİ REFERANS YAP';
+      }
+    }
+    const added = saveBillToHistory(current, { id, hasImage });
+    showHistoryStatus(added
+      ? `Güncel fatura geçmişe kaydedildi${hasImage ? ' (fotoğrafıyla)' : ''}. Bir sonraki faturada bu kayıt yeni referans olacak.${photoNote}`
+      : 'Bu fatura zaten geçmişte kayıtlı.');
     resetCurrentBill();
     renderBillHistory();
     renderBillComparison();
@@ -950,6 +1096,8 @@ function setUserDataLoading(loading) {
 function applyUserData() {
   taskDay = istanbulDayKey();
   renderTasks();
+  document.getElementById('bill-dialog').close();
+  updateKeepPhotoOption();
   renderBillHistory();
   document.getElementById('bill-comparison-feedback').hidden = true;
   document.getElementById('bill-comparison-error').hidden = true;
@@ -974,6 +1122,7 @@ async function initialize() {
   wirePersonalReward();
   wireBadgeButtons();
   wireBillUpload();
+  wireBillDialog();
   if (loadBillHistory().length >= 2) renderBillComparison();
   initializeWorkspaceTabs();
   // A page left open past midnight (Istanbul) switches to the new, empty day.
