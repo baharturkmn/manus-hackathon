@@ -2,14 +2,10 @@
   "version": 1,
   "reservoir": {
     "source": "dolulukorani.com · İSKİ verisi",
-    "fetchedAt": "2026-10-31T15:22:28.540Z",
-    "measuredOn": "2026-10-31",
-    "occupancy": 53.8,
+    "fetchedAt": "2026-11-01T13:32:06.774Z",
+    "measuredOn": "2026-11-01",
+    "occupancy": 53.71,
     "trend": [
-      {
-        "date": "2026-10-27",
-        "value": 52.97
-      },
       {
         "date": "2026-10-28",
         "value": 53.71
@@ -25,49 +21,45 @@
       {
         "date": "2026-10-31",
         "value": 53.8
+      },
+      {
+        "date": "2026-11-01",
+        "value": 53.71
       }
     ],
     "criticalDam": {
       "name": "Papuçdere",
-      "occupancy": 2.7,
-      "measuredOn": "2026-10-31"
+      "occupancy": 2.6,
+      "measuredOn": "2026-11-01"
     }
   },
   "forecast": {
     "source": "MGM servis.mgm.gov.tr",
-    "fetchedAt": "2026-10-31T15:22:28.540Z",
+    "fetchedAt": "2026-11-01T13:32:06.774Z",
     "days": [
-      {
-        "date": "2026-11-01",
-        "event": "Mevzi Sağanak Yağışlı",
-        "code": "rain",
-        "rainSignal": true,
-        "low": 13,
-        "high": 20
-      },
       {
         "date": "2026-11-02",
         "event": "Sağanak Yağışlı",
         "code": "rain",
         "rainSignal": true,
-        "low": 14,
-        "high": 20
+        "low": 15,
+        "high": 19
       },
       {
         "date": "2026-11-03",
         "event": "Sağanak Yağışlı",
         "code": "rain",
         "rainSignal": true,
-        "low": 14,
+        "low": 15,
         "high": 20
       },
       {
         "date": "2026-11-04",
-        "event": "Sağanak Yağışlı",
-        "code": "rain",
-        "rainSignal": true,
-        "low": 14,
-        "high": 17
+        "event": "KGY",
+        "code": "unknown",
+        "rainSignal": null,
+        "low": 13,
+        "high": 16
       },
       {
         "date": "2026-11-05",
@@ -76,6 +68,14 @@
         "rainSignal": true,
         "low": 12,
         "high": 14
+      },
+      {
+        "date": "2026-11-06",
+        "event": "Parçalı Bulutlu",
+        "code": "cloud",
+        "rainSignal": false,
+        "low": 10,
+        "high": 13
       }
     ]
   },
@@ -83,17 +83,17 @@
     "level": "normal",
     "computedLevel": "normal",
     "since": "2026-10-16",
-    "measuredOn": "2026-10-31",
+    "measuredOn": "2026-11-01",
     "stale": false,
     "reasons": [],
     "held": false,
     "official": null,
     "indicators": {
-      "occupancy": 53.8,
-      "normal": 47.7,
-      "diff": 6.1,
+      "occupancy": 53.71,
+      "normal": 47.8,
+      "diff": 6,
       "pace28": null,
-      "readings28": 16,
+      "readings28": 17,
       "daysTo20": null
     },
     "rule": {
