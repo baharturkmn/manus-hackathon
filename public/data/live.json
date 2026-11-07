@@ -2,7 +2,7 @@
   "version": 1,
   "reservoir": {
     "source": "dolulukorani.com · İSKİ verisi",
-    "fetchedAt": "2026-11-06T21:31:28.051Z",
+    "fetchedAt": "2026-11-07T15:41:36.044Z",
     "measuredOn": "2026-11-03",
     "occupancy": 54.17,
     "trend": [
@@ -35,22 +35,14 @@
   },
   "forecast": {
     "source": "MGM servis.mgm.gov.tr",
-    "fetchedAt": "2026-11-06T21:31:28.051Z",
+    "fetchedAt": "2026-11-07T15:41:36.044Z",
     "days": [
       {
-        "date": "2026-11-07",
+        "date": "2026-11-08",
         "event": "Sağanak Yağışlı",
         "code": "rain",
         "rainSignal": true,
-        "low": 8,
-        "high": 12
-      },
-      {
-        "date": "2026-11-08",
-        "event": "Yağmurlu",
-        "code": "rain",
-        "rainSignal": true,
-        "low": 7,
+        "low": 6,
         "high": 12
       },
       {
@@ -59,23 +51,31 @@
         "code": "cloud",
         "rainSignal": false,
         "low": 7,
-        "high": 14
+        "high": 13
       },
       {
         "date": "2026-11-10",
         "event": "Sağanak Yağışlı",
         "code": "rain",
         "rainSignal": true,
-        "low": 8,
-        "high": 14
+        "low": 9,
+        "high": 13
       },
       {
         "date": "2026-11-11",
-        "event": "Sağanak Yağışlı",
-        "code": "rain",
-        "rainSignal": true,
-        "low": 10,
+        "event": "Parçalı Bulutlu",
+        "code": "cloud",
+        "rainSignal": false,
+        "low": 11,
         "high": 17
+      },
+      {
+        "date": "2026-11-12",
+        "event": "Parçalı Bulutlu",
+        "code": "cloud",
+        "rainSignal": false,
+        "low": 14,
+        "high": 19
       }
     ]
   },
