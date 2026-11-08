@@ -2,7 +2,7 @@
   "version": 1,
   "reservoir": {
     "source": "dolulukorani.com · İSKİ verisi",
-    "fetchedAt": "2026-11-07T20:15:19.816Z",
+    "fetchedAt": "2026-11-08T06:08:07.880Z",
     "measuredOn": "2026-11-07",
     "occupancy": 61.93,
     "trend": [
@@ -35,11 +35,11 @@
   },
   "forecast": {
     "source": "MGM servis.mgm.gov.tr",
-    "fetchedAt": "2026-11-07T20:15:19.816Z",
+    "fetchedAt": "2026-11-08T06:08:07.880Z",
     "days": [
       {
         "date": "2026-11-08",
-        "event": "Sağanak Yağışlı",
+        "event": "Hafif Sağanak Yağışlı",
         "code": "rain",
         "rainSignal": true,
         "low": 6,
