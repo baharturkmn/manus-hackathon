@@ -2,14 +2,10 @@
   "version": 1,
   "reservoir": {
     "source": "dolulukorani.com · İSKİ verisi",
-    "fetchedAt": "2026-11-11T01:16:07.305Z",
-    "measuredOn": "2026-11-10",
-    "occupancy": 61.81,
+    "fetchedAt": "2026-11-11T07:48:20.780Z",
+    "measuredOn": "2026-11-11",
+    "occupancy": 61.64,
     "trend": [
-      {
-        "date": "2026-11-06",
-        "value": 61.5
-      },
       {
         "date": "2026-11-07",
         "value": 61.93
@@ -25,21 +21,25 @@
       {
         "date": "2026-11-10",
         "value": 61.81
+      },
+      {
+        "date": "2026-11-11",
+        "value": 61.64
       }
     ],
     "criticalDam": {
       "name": "Papuçdere",
-      "occupancy": 7.5,
-      "measuredOn": "2026-11-10"
+      "occupancy": 7.2,
+      "measuredOn": "2026-11-11"
     }
   },
   "forecast": {
     "source": "MGM servis.mgm.gov.tr",
-    "fetchedAt": "2026-11-11T01:16:07.305Z",
+    "fetchedAt": "2026-11-11T07:48:20.780Z",
     "days": [
       {
         "date": "2026-11-11",
-        "event": "Puslu",
+        "event": "Parçalı Bulutlu",
         "code": "cloud",
         "rainSignal": false,
         "low": 11,
@@ -83,17 +83,17 @@
     "level": "normal",
     "computedLevel": "normal",
     "since": "2026-10-16",
-    "measuredOn": "2026-11-10",
+    "measuredOn": "2026-11-11",
     "stale": false,
     "reasons": [],
     "held": false,
     "official": null,
     "indicators": {
-      "occupancy": 61.81,
-      "normal": 47.5,
-      "diff": 14.3,
+      "occupancy": 61.64,
+      "normal": 47.4,
+      "diff": 14.2,
       "pace28": null,
-      "readings28": 26,
+      "readings28": 27,
       "daysTo20": null
     },
     "rule": {
