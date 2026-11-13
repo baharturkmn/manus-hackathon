@@ -2,7 +2,7 @@
   "version": 1,
   "reservoir": {
     "source": "dolulukorani.com · İSKİ verisi",
-    "fetchedAt": "2026-11-13T09:35:44.566Z",
+    "fetchedAt": "2026-11-13T17:47:11.993Z",
     "measuredOn": "2026-11-13",
     "occupancy": 61.13,
     "trend": [
@@ -35,14 +35,14 @@
   },
   "forecast": {
     "source": "MGM servis.mgm.gov.tr",
-    "fetchedAt": "2026-11-13T09:35:44.566Z",
+    "fetchedAt": "2026-11-13T17:47:11.993Z",
     "days": [
       {
         "date": "2026-11-14",
         "event": "KGY",
         "code": "unknown",
         "rainSignal": null,
-        "low": 17,
+        "low": 18,
         "high": 21
       },
       {
