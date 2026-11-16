@@ -2,14 +2,10 @@
   "version": 1,
   "reservoir": {
     "source": "dolulukorani.com · İSKİ verisi",
-    "fetchedAt": "2026-11-15T17:45:09.524Z",
-    "measuredOn": "2026-11-15",
-    "occupancy": 61.08,
+    "fetchedAt": "2026-11-16T11:28:37.058Z",
+    "measuredOn": "2026-11-16",
+    "occupancy": 61.11,
     "trend": [
-      {
-        "date": "2026-11-11",
-        "value": 61.64
-      },
       {
         "date": "2026-11-12",
         "value": 61.43
@@ -25,31 +21,27 @@
       {
         "date": "2026-11-15",
         "value": 61.08
+      },
+      {
+        "date": "2026-11-16",
+        "value": 61.11
       }
     ],
     "criticalDam": {
       "name": "Papuçdere",
-      "occupancy": 7.5,
-      "measuredOn": "2026-11-15"
+      "occupancy": 7.3,
+      "measuredOn": "2026-11-16"
     }
   },
   "forecast": {
     "source": "MGM servis.mgm.gov.tr",
-    "fetchedAt": "2026-11-15T17:45:09.524Z",
+    "fetchedAt": "2026-11-16T11:28:37.058Z",
     "days": [
       {
-        "date": "2026-11-16",
-        "event": "Parçalı Bulutlu",
-        "code": "cloud",
-        "rainSignal": false,
-        "low": 10,
-        "high": 15
-      },
-      {
         "date": "2026-11-17",
-        "event": "Gökgürültülü Sağanak Yağışlı",
-        "code": "storm",
-        "rainSignal": true,
+        "event": "KGY",
+        "code": "unknown",
+        "rainSignal": null,
         "low": 12,
         "high": 16
       },
@@ -66,7 +58,7 @@
         "event": "Sağanak Yağışlı",
         "code": "rain",
         "rainSignal": true,
-        "low": 17,
+        "low": 16,
         "high": 21
       },
       {
@@ -74,8 +66,16 @@
         "event": "Sağanak Yağışlı",
         "code": "rain",
         "rainSignal": true,
-        "low": 19,
+        "low": 17,
         "high": 21
+      },
+      {
+        "date": "2026-11-21",
+        "event": "Gökgürültülü Sağanak Yağışlı",
+        "code": "storm",
+        "rainSignal": true,
+        "low": 15,
+        "high": 18
       }
     ]
   },
@@ -83,16 +83,16 @@
     "level": "normal",
     "computedLevel": "normal",
     "since": "2026-10-16",
-    "measuredOn": "2026-11-15",
+    "measuredOn": "2026-11-16",
     "stale": false,
     "reasons": [],
     "held": false,
     "official": null,
     "indicators": {
-      "occupancy": 61.08,
+      "occupancy": 61.11,
       "normal": 47.2,
       "diff": 13.9,
-      "pace28": 8.65,
+      "pace28": 7.97,
       "readings28": 28,
       "daysTo20": null
     },
