@@ -2,14 +2,10 @@
   "version": 1,
   "reservoir": {
     "source": "dolulukorani.com · İSKİ verisi",
-    "fetchedAt": "2026-11-21T11:11:15.195Z",
-    "measuredOn": "2026-11-21",
-    "occupancy": 60.75,
+    "fetchedAt": "2026-11-22T06:55:18.797Z",
+    "measuredOn": "2026-11-22",
+    "occupancy": 60.76,
     "trend": [
-      {
-        "date": "2026-11-17",
-        "value": 61.06
-      },
       {
         "date": "2026-11-18",
         "value": 60.96
@@ -25,17 +21,17 @@
       {
         "date": "2026-11-21",
         "value": 60.75
+      },
+      {
+        "date": "2026-11-22",
+        "value": 60.76
       }
     ],
-    "criticalDam": {
-      "name": "Papuçdere",
-      "occupancy": 7.3,
-      "measuredOn": "2026-11-21"
-    }
+    "criticalDam": null
   },
   "forecast": {
     "source": "MGM servis.mgm.gov.tr",
-    "fetchedAt": "2026-11-21T11:11:15.195Z",
+    "fetchedAt": "2026-11-22T06:55:18.797Z",
     "days": [
       {
         "date": "2026-11-22",
@@ -83,16 +79,16 @@
     "level": "normal",
     "computedLevel": "normal",
     "since": "2026-10-16",
-    "measuredOn": "2026-11-21",
+    "measuredOn": "2026-11-22",
     "stale": false,
     "reasons": [],
     "held": false,
     "official": null,
     "indicators": {
-      "occupancy": 60.75,
+      "occupancy": 60.76,
       "normal": 47.1,
       "diff": 13.7,
-      "pace28": 7.75,
+      "pace28": 7.89,
       "readings28": 28,
       "daysTo20": null
     },
