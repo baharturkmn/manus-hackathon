@@ -2,14 +2,10 @@
   "version": 1,
   "reservoir": {
     "source": "dolulukorani.com · İSKİ verisi",
-    "fetchedAt": "2026-11-27T21:59:40.757Z",
-    "measuredOn": "2026-11-27",
-    "occupancy": 61.67,
+    "fetchedAt": "2026-11-28T13:04:21.076Z",
+    "measuredOn": "2026-11-28",
+    "occupancy": 61.56,
     "trend": [
-      {
-        "date": "2026-11-23",
-        "value": 60.56
-      },
       {
         "date": "2026-11-24",
         "value": 61.38
@@ -25,29 +21,25 @@
       {
         "date": "2026-11-27",
         "value": 61.67
+      },
+      {
+        "date": "2026-11-28",
+        "value": 61.56
       }
     ],
     "criticalDam": {
       "name": "Papuçdere",
-      "occupancy": 7.5,
-      "measuredOn": "2026-11-27"
+      "occupancy": 7.7,
+      "measuredOn": "2026-11-28"
     }
   },
   "forecast": {
     "source": "MGM servis.mgm.gov.tr",
-    "fetchedAt": "2026-11-27T21:59:40.757Z",
+    "fetchedAt": "2026-11-28T13:04:21.076Z",
     "days": [
       {
-        "date": "2026-11-28",
-        "event": "Çok Bulutlu",
-        "code": "cloud",
-        "rainSignal": false,
-        "low": 10,
-        "high": 17
-      },
-      {
         "date": "2026-11-29",
-        "event": "Sağanak Yağışlı",
+        "event": "Kuvvetli Sağanak Yağışlı",
         "code": "rain",
         "rainSignal": true,
         "low": 11,
@@ -58,7 +50,7 @@
         "event": "Yağmurlu",
         "code": "rain",
         "rainSignal": true,
-        "low": 5,
+        "low": 7,
         "high": 9
       },
       {
@@ -75,6 +67,14 @@
         "code": "rain",
         "rainSignal": true,
         "low": 5,
+        "high": 7
+      },
+      {
+        "date": "2026-12-03",
+        "event": "Yağmurlu",
+        "code": "rain",
+        "rainSignal": true,
+        "low": 5,
         "high": 9
       }
     ]
@@ -83,16 +83,16 @@
     "level": "normal",
     "computedLevel": "normal",
     "since": "2026-10-16",
-    "measuredOn": "2026-11-27",
+    "measuredOn": "2026-11-28",
     "stale": false,
     "reasons": [],
     "held": false,
     "official": null,
     "indicators": {
-      "occupancy": 61.67,
-      "normal": 47.4,
-      "diff": 14.2,
-      "pace28": 7.93,
+      "occupancy": 61.56,
+      "normal": 47.5,
+      "diff": 14,
+      "pace28": 7.76,
       "readings28": 28,
       "daysTo20": null
     },
